@@ -2,6 +2,8 @@
 
 用 React + TypeScript 製作的團隊聚餐日期調查工具。
 
+網站：https://lily0822.github.io/QA/
+
 ## 本機執行
 
 ```bash
