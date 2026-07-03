@@ -18,10 +18,8 @@ button { cursor: pointer; }
 .brand { display: flex; align-items: center; gap: 18px; }
 .brand-icon { width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; color: white; background: linear-gradient(145deg, #27b4d9, #1685c1); box-shadow: 0 10px 25px #20a9d344; }
 .brand-icon svg { width: 29px; height: 29px; }
-.eyebrow { margin: 0 0 3px; color: #299bc2; font-size: 11px; font-weight: 800; letter-spacing: .17em; }
 h1, h2, p { margin-top: 0; }
-h1 { margin-bottom: 4px; font-size: clamp(28px, 3vw, 38px); color: #183c52; letter-spacing: -.04em; }
-.subtitle { margin-bottom: 0; color: #748896; font-size: 14px; }
+h1 { margin-bottom: 0; font-size: clamp(28px, 3vw, 38px); color: #0876aa; letter-spacing: -.04em; }
 .month-switcher { display: flex; align-items: center; gap: 13px; padding: 9px; border-radius: 18px; border: 1px solid #cfe8f2; background: #f0faff; }
 .month-switcher > div { min-width: 105px; text-align: center; }
 .month-switcher strong, .month-switcher span { display: block; }
@@ -43,6 +41,8 @@ th, td { min-width: 34px; height: 39px; padding: 4px 2px; text-align: center; bo
 th { position: sticky; top: 0; z-index: 3; color: #617c8a; background: #f4fafc; font-weight: 700; cursor: pointer; }
 th span, th small { display: block; }
 th small { color: #9cb0ba; font-size: 10px; }
+th.everyone-available { color: #fff; background: #079269; }
+th.everyone-available small { color: #d9fff2; }
 .sticky { position: sticky; left: 0; z-index: 2; }
 th.sticky { z-index: 5; }
 .name-cell { min-width: 82px; text-align: left; padding-left: 12px; color: #385a6b; background: #fff; font-weight: 700; box-shadow: 4px 0 10px #3c6b7b0b; }
@@ -69,16 +69,19 @@ aside .card { padding: 20px; }
 .section-title > svg, .title-group > svg { color: #259bbc; }
 .section-title h2 { margin: 0; }
 .with-action { justify-content: space-between; }
-.ranking-list { margin-top: 15px; }
-.rank-item { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 9px; padding: 10px 2px; border-bottom: 1px solid #edf3f5; }
-.rank-item:last-child { border-bottom: 0; }
-.rank { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 8px; color: #558094; background: #edf7fa; font-size: 11px; font-weight: 800; }
-.rank-item:first-child .rank { color: #fff; background: #24a8cb; }
-.rank-item strong, .rank-item small { display: block; }
-.rank-item strong { color: #385a6d; font-size: 12px; }
-.rank-item small { margin-top: 2px; color: #9aabb4; font-size: 10px; font-weight: 500; }
-.rank-item > b { color: #1794b9; font-size: 18px; }
-.rank-item > b small { display: inline; }
+.ranking { min-height: 350px; }
+.stats-title { gap: 7px; padding-bottom: 11px; color: #008fd0; }
+.stats-title span { font-size: 20px; line-height: 1; }
+.stats-title h2 { color: #006da5; font-size: 14px; }
+.stats-head, .stats-row { display: grid; grid-template-columns: 1.25fr 1fr 1fr; align-items: center; }
+.stats-head { padding: 8px 4px; border-top: 1px solid #e5f1f6; border-bottom: 1px solid #e5f1f6; color: #8b9db6; font-size: 11px; }
+.stats-head strong { color: #0086cf; text-align: center; }
+.stats-head span:last-child { text-align: right; }
+.stats-list { max-height: 245px; overflow-y: auto; }
+.stats-row { padding: 10px 4px; border-bottom: 1px dashed #e5eef3; color: #72879a; font-size: 11px; }
+.stats-row strong { color: #d95d70; text-align: center; }
+.stats-row span:last-child { color: #4c9b7d; text-align: right; }
+.all-available-message { padding: 48px 2px 20px; color: #8293b1; text-align: center; font-size: 12px; line-height: 1.55; }
 .text-button { display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px; border: 0; border-radius: 9px; color: #278ca9; background: #edf9fc; font-size: 11px; font-weight: 800; }
 .text-button svg { width: 13px; height: 13px; }
 .add-member { display: flex; gap: 7px; margin: 14px 0 10px; }
@@ -115,7 +118,6 @@ footer { padding: 28px 0 2px; color: #9aadb6; text-align: center; font-size: 11p
   .app-shell { padding: 14px; }
   .hero { padding: 22px; align-items: flex-start; flex-direction: column; }
   .brand-icon { width: 48px; height: 48px; flex: 0 0 48px; }
-  .subtitle { display: none; }
   .month-switcher { width: 100%; justify-content: space-between; }
   .calendar { padding: 14px; }
   .toolbar { align-items: flex-start; flex-direction: column; }

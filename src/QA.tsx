@@ -11,7 +11,6 @@ import {
   Settings,
   Trash2,
   UserRound,
-  UsersRound,
   Utensils,
   X,
 } from 'lucide-react'
@@ -89,14 +88,13 @@ export default function QA() {
 
   const rankedDays = useMemo(() => (
     Array.from({ length: days }, (_, index) => index + 1)
-      .filter((day) => !isHoliday(day))
+      .filter((day) => !isHoliday(day) && (unavailableCount[day] ?? 0) > 0)
       .map((day) => ({
         day,
         unavailable: unavailableCount[day] ?? 0,
         available: data.members.length - (unavailableCount[day] ?? 0),
       }))
-      .sort((a, b) => b.available - a.available || a.day - b.day)
-      .slice(0, 8)
+      .sort((a, b) => a.unavailable - b.unavailable || a.day - b.day)
   ), [days, data.members.length, unavailableCount, data.holidayOverrides, year, month])
 
   const update = (patch: Partial<MonthData>) => setData((current) => ({ ...current, ...patch }))
@@ -150,9 +148,7 @@ export default function QA() {
         <div className="brand">
           <span className="brand-icon"><CalendarDays /></span>
           <div>
-            <p className="eyebrow">TEAM DINNER PLANNER</p>
-            <h1>聚餐日期調查</h1>
-            <p className="subtitle">勾選你無法出席的日期，最佳聚餐日一眼就知道。</p>
+            <h1>測試部團建</h1>
           </div>
         </div>
         <div className="month-switcher" aria-label="月份切換">
@@ -185,8 +181,13 @@ export default function QA() {
                   <th className="sticky name-cell">日期</th>
                   {Array.from({ length: days }, (_, index) => {
                     const day = index + 1
+                    const everyoneAvailable = !isHoliday(day) && unavailableCount[day] === 0
                     return (
-                      <th key={day} className={isHoliday(day) ? 'holiday' : ''} onClick={() => toggleHoliday(day)}>
+                      <th
+                        key={day}
+                        className={isHoliday(day) ? 'holiday' : everyoneAvailable ? 'everyone-available' : ''}
+                        onClick={() => toggleHoliday(day)}
+                      >
                         <span>{month}/{day}</span><small>{weekday(day)}</small>
                       </th>
                     )
@@ -223,16 +224,27 @@ export default function QA() {
 
         <aside>
           <section className="card ranking">
-            <div className="section-title"><UsersRound /><div><h2>推薦日期</h2><p>依可出席人數排序</p></div></div>
-            <div className="ranking-list">
-              {rankedDays.map((item, index) => (
-                <div className="rank-item" key={item.day}>
-                  <span className="rank">{index + 1}</span>
-                  <div><strong>{month}/{item.day}（{weekday(item.day)}）</strong><small>{item.unavailable} 人無法出席</small></div>
-                  <b>{item.available}<small> / {data.members.length}</small></b>
-                </div>
-              ))}
+            <div className="section-title stats-title"><span>✣</span><h2>工作日無法參加統計</h2></div>
+            <div className="stats-head">
+              <span>日期 ↕</span>
+              <strong>不參加 ▲</strong>
+              <span>可參加 ↕</span>
             </div>
+            {rankedDays.length === 0 ? (
+              <div className="all-available-message">
+                🎉 太棒了！本月目前所有工作日大家<br />都可以參加！
+              </div>
+            ) : (
+              <div className="stats-list">
+                {rankedDays.map((item) => (
+                  <div className="stats-row" key={item.day}>
+                    <span>{month}/{item.day.toString().padStart(2, '0')}（{weekday(item.day)}）</span>
+                    <strong>{item.unavailable} 人</strong>
+                    <span>{item.available} 人</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="card members">
