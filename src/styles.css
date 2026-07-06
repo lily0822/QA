@@ -84,9 +84,10 @@ aside .card { padding: 20px; }
 .all-available-message { padding: 48px 2px 20px; color: #8293b1; text-align: center; font-size: 12px; line-height: 1.55; }
 .text-button { display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px; border: 0; border-radius: 9px; color: #278ca9; background: #edf9fc; font-size: 11px; font-weight: 800; }
 .text-button svg { width: 13px; height: 13px; }
+.permission-note { color: #94a6af; font-size: 10px; font-weight: 600; }
 .add-member { display: flex; gap: 7px; margin: 14px 0 10px; }
-.add-member input, .dinner-field input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #d9e8ed; border-radius: 9px; outline: none; color: #36596b; background: #fff; font-size: 12px; }
-.add-member input:focus, .dinner-field input:focus { border-color: #47adca; box-shadow: 0 0 0 3px #47adca1c; }
+.add-member input, .dinner-field input, .dinner-field select { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #d9e8ed; border-radius: 9px; outline: none; color: #36596b; background: #fff; font-size: 12px; }
+.add-member input:focus, .dinner-field input:focus, .dinner-field select:focus { border-color: #47adca; box-shadow: 0 0 0 3px #47adca1c; }
 .add-member > button { flex: 0 0 36px; border: 0; border-radius: 9px; color: #fff; background: #229fc4; }
 .add-member svg { width: 16px; }
 .member-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px; max-height: 165px; overflow: auto; }
@@ -96,7 +97,7 @@ aside .card { padding: 20px; }
 .member-chips button svg { width: 10px; }
 
 .dinner { margin-top: 20px; padding: 22px; }
-.dinner-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+.dinner-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
 .dinner-field { display: flex; align-items: center; gap: 12px; min-height: 86px; padding: 15px; border: 1px solid #e4eef2; border-radius: 16px; background: #f9fcfd; }
 .dinner-field > span { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 12px; color: #239bbb; background: #e5f7fb; }
 .dinner-field svg { width: 18px; }

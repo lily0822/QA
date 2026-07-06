@@ -9,6 +9,7 @@ import {
   Plus,
   Save,
   Settings,
+  SunMoon,
   Trash2,
   UserRound,
   Utensils,
@@ -23,6 +24,7 @@ type MonthData = {
   holidayOverrides: Record<number, boolean>
   restaurant: string
   time: string
+  mealPeriod: string
   link: string
 }
 
@@ -37,6 +39,7 @@ const emptyData = (): MonthData => ({
   holidayOverrides: {},
   restaurant: '',
   time: '',
+  mealPeriod: '',
   link: '',
 })
 
@@ -60,6 +63,7 @@ export default function QA() {
   const [newMember, setNewMember] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [editingDinner, setEditingDinner] = useState(false)
+  const isLily = data.members.find(({ id }) => id === selectedMember)?.name === 'Lily'
 
   useEffect(() => {
     setData(loadMonth(year, month))
@@ -69,6 +73,13 @@ export default function QA() {
   useEffect(() => {
     localStorage.setItem(keyFor(year, month), JSON.stringify(data))
   }, [data, year, month])
+
+  useEffect(() => {
+    if (!isLily) {
+      setShowSettings(false)
+      setEditingDinner(false)
+    }
+  }, [isLily])
 
   const days = new Date(year, month, 0).getDate()
   const weekday = (day: number) => ['日', '一', '二', '三', '四', '五', '六'][new Date(year, month - 1, day).getDay()]
@@ -123,6 +134,7 @@ export default function QA() {
   }
 
   const addMember = () => {
+    if (!isLily) return
     const name = newMember.trim()
     if (!name) return
     update({ members: [...data.members, { id: crypto.randomUUID(), name }] })
@@ -130,6 +142,7 @@ export default function QA() {
   }
 
   const removeMember = (member: Member) => {
+    if (!isLily) return
     if (!window.confirm(`確定要移除 ${member.name} 嗎？`)) return
     const grid = Object.fromEntries(
       Object.entries(data.grid).map(([day, values]) => {
@@ -250,7 +263,11 @@ export default function QA() {
           <section className="card members">
             <div className="section-title with-action">
               <div className="title-group"><Settings /><div><h2>成員管理</h2><p>{data.members.length} 位成員</p></div></div>
-              <button className="text-button" onClick={() => setShowSettings((value) => !value)}>{showSettings ? '完成' : '編輯'}</button>
+              {isLily ? (
+                <button className="text-button" onClick={() => setShowSettings((value) => !value)}>{showSettings ? '完成' : '編輯'}</button>
+              ) : (
+                <span className="permission-note">僅 Lily 可編輯</span>
+              )}
             </div>
             {showSettings && (
               <div className="add-member">
@@ -273,18 +290,47 @@ export default function QA() {
       <section className="dinner card">
         <div className="section-title with-action">
           <div className="title-group"><Utensils /><div><h2>聚餐資訊</h2><p>把餐廳、時間和連結放在一起</p></div></div>
-          <button className="text-button" onClick={() => setEditingDinner((value) => !value)}>
-            {editingDinner ? <><X />完成</> : <><Pencil />編輯資訊</>}
-          </button>
+          {isLily ? (
+            <button className="text-button" onClick={() => setEditingDinner((value) => !value)}>
+              {editingDinner ? <><X />完成</> : <><Pencil />編輯資訊</>}
+            </button>
+          ) : (
+            <span className="permission-note">僅 Lily 可編輯</span>
+          )}
         </div>
         <div className="dinner-grid">
           <DinnerField icon={<Utensils />} label="餐廳" value={data.restaurant} editing={editingDinner} placeholder="例如：小器食堂" onChange={(restaurant) => update({ restaurant })} />
           <DinnerField icon={<Clock3 />} label="時間" value={data.time} editing={editingDinner} placeholder="例如：7/25 18:30" onChange={(time) => update({ time })} />
+          <DinnerSelect icon={<SunMoon />} label="時段" value={data.mealPeriod} editing={editingDinner} onChange={(mealPeriod) => update({ mealPeriod })} />
           <DinnerField icon={<ExternalLink />} label="餐廳連結" value={data.link} editing={editingDinner} placeholder="貼上 Google Maps 網址" onChange={(link) => update({ link })} link />
         </div>
       </section>
 
       <footer>Made for good food and easy plans.</footer>
+    </div>
+  )
+}
+
+function DinnerSelect({ icon, label, value, editing, onChange }: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  editing: boolean
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="dinner-field">
+      <span>{icon}</span>
+      <div>
+        <small>{label}</small>
+        {editing ? (
+          <select value={value} onChange={(event) => onChange(event.target.value)}>
+            <option value="">請選擇</option>
+            <option value="中午">中午</option>
+            <option value="晚上">晚上</option>
+          </select>
+        ) : <strong className={!value ? 'muted' : ''}>{value || '尚未設定'}</strong>}
+      </div>
     </div>
   )
 }
