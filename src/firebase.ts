@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBGxfJzUtBp_0oK_7-zoLAj_3vRZgmBbH8',
+  apiKey: 'AIzaSyBGxFJzUtBp_OoK_7-zoLAj_3vRZgmBbH8',
   authDomain: 'qa-food-465bd.firebaseapp.com',
   projectId: 'qa-food-465bd',
   storageBucket: 'qa-food-465bd.firebasestorage.app',
