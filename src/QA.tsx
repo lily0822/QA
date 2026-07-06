@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { User } from 'firebase/auth'
+import { onAuthStateChanged, signInAnonymously } from 'firebase/auth'
+import { doc, onSnapshot, runTransaction, setDoc } from 'firebase/firestore'
 import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Cloud,
+  CloudOff,
   Clock3,
   ExternalLink,
   Pencil,
@@ -15,6 +20,7 @@ import {
   Utensils,
   X,
 } from 'lucide-react'
+import { auth, db } from './firebase'
 
 type Member = { id: string; name: string }
 type Grid = Record<number, Record<string, boolean>>
@@ -63,12 +69,55 @@ export default function QA() {
   const [newMember, setNewMember] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [editingDinner, setEditingDinner] = useState(false)
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null)
+  const [syncStatus, setSyncStatus] = useState<'connecting' | 'synced' | 'error'>('connecting')
   const isLily = data.members.find(({ id }) => id === selectedMember)?.name === 'Lily'
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user)
+      if (user) setSyncStatus('connecting')
+    })
+
+    signInAnonymously(auth).catch((error) => {
+      console.error('Firebase anonymous sign-in failed:', error)
+      setSyncStatus('error')
+    })
+
+    return unsubscribe
+  }, [])
 
   useEffect(() => {
     setData(loadMonth(year, month))
     setSelectedMember('')
   }, [year, month])
+
+  useEffect(() => {
+    if (!firebaseUser) return
+
+    setSyncStatus('connecting')
+    const monthRef = doc(db, 'months', `${year}-${month.toString().padStart(2, '0')}`)
+    const unsubscribe = onSnapshot(monthRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setData({ ...emptyData(), ...snapshot.data() } as MonthData)
+        setSyncStatus('synced')
+        return
+      }
+
+      const localData = loadMonth(year, month)
+      setDoc(monthRef, localData)
+        .then(() => setSyncStatus('synced'))
+        .catch((error) => {
+          console.error('Firebase initial save failed:', error)
+          setSyncStatus('error')
+        })
+    }, (error) => {
+      console.error('Firebase realtime sync failed:', error)
+      setSyncStatus('error')
+    })
+
+    return unsubscribe
+  }, [firebaseUser, year, month])
 
   useEffect(() => {
     localStorage.setItem(keyFor(year, month), JSON.stringify(data))
@@ -108,7 +157,19 @@ export default function QA() {
       .sort((a, b) => a.unavailable - b.unavailable || a.day - b.day)
   ), [days, data.members.length, unavailableCount, data.holidayOverrides, year, month])
 
-  const update = (patch: Partial<MonthData>) => setData((current) => ({ ...current, ...patch }))
+  const update = (patch: Partial<MonthData>) => {
+    setData((current) => ({ ...current, ...patch }))
+    if (!firebaseUser) return
+
+    setSyncStatus('connecting')
+    const monthRef = doc(db, 'months', `${year}-${month.toString().padStart(2, '0')}`)
+    setDoc(monthRef, patch, { merge: true })
+      .then(() => setSyncStatus('synced'))
+      .catch((error) => {
+        console.error('Firebase save failed:', error)
+        setSyncStatus('error')
+      })
+  }
 
   const moveMonth = (direction: number) => {
     const date = new Date(year, month - 1 + direction, 1)
@@ -118,12 +179,32 @@ export default function QA() {
 
   const toggleCell = (day: number, memberId: string) => {
     if (isHoliday(day)) return
-    update({
-      grid: {
-        ...data.grid,
-        [day]: { ...data.grid[day], [memberId]: !data.grid[day]?.[memberId] },
-      },
+    const nextValue = !data.grid[day]?.[memberId]
+    const nextGrid = {
+      ...data.grid,
+      [day]: { ...data.grid[day], [memberId]: nextValue },
+    }
+    setData((current) => ({ ...current, grid: nextGrid }))
+
+    if (!firebaseUser) return
+    setSyncStatus('connecting')
+    const monthRef = doc(db, 'months', `${year}-${month.toString().padStart(2, '0')}`)
+    runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(monthRef)
+      const cloudData = snapshot.exists() ? snapshot.data() as Partial<MonthData> : emptyData()
+      const cloudGrid = cloudData.grid ?? {}
+      transaction.set(monthRef, {
+        grid: {
+          ...cloudGrid,
+          [day]: { ...cloudGrid[day], [memberId]: nextValue },
+        },
+      }, { merge: true })
     })
+      .then(() => setSyncStatus('synced'))
+      .catch((error) => {
+        console.error('Firebase cell update failed:', error)
+        setSyncStatus('error')
+      })
   }
 
   const toggleHoliday = (day: number) => {
@@ -162,6 +243,10 @@ export default function QA() {
           <span className="brand-icon"><CalendarDays /></span>
           <div>
             <h1>測試部團建</h1>
+            <span className={`sync-badge ${syncStatus}`}>
+              {syncStatus === 'synced' ? <Cloud /> : <CloudOff />}
+              {syncStatus === 'synced' ? '雲端即時同步中' : syncStatus === 'connecting' ? '正在同步…' : '同步失敗'}
+            </span>
           </div>
         </div>
         <div className="month-switcher" aria-label="月份切換">
