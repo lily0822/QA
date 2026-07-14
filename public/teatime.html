@@ -147,7 +147,7 @@
       unsubscribe: null,
       syncStatus: "offline",
       syncError: "",
-      firebaseConfigText: localStorage.getItem(STORAGE_KEYS.config) || JSON.stringify(DEFAULT_FIREBASE_CONFIG, null, 2),
+      firebaseConfigText: JSON.stringify(DEFAULT_FIREBASE_CONFIG, null, 2),
       roomId: localStorage.getItem(STORAGE_KEYS.roomId) || "office-teatime",
       profile: JSON.parse(localStorage.getItem(STORAGE_KEYS.profile) || '{"name":""}'),
       menu: structuredClone(DEFAULT_MENU),
@@ -431,7 +431,7 @@
                 下午茶團購點餐
               </div>
               <h1 class="mt-5 text-4xl sm:text-5xl font-black tracking-normal text-stone-950">今天喝什麼，大家一起同步點。</h1>
-              <p class="mt-4 text-base leading-7 text-stone-600">輸入名字後進入點餐房間。若填入 Firebase 設定，所有人的訂單、菜單與運費會即時同步；未設定也能先單機試用。</p>
+              <p class="mt-4 text-base leading-7 text-stone-600">輸入名字和房間代碼後進入點餐，同一個房間的人會即時同步訂單、菜單與運費。</p>
 
               <div class="mt-8 bg-white border border-stone-200 shadow-sm p-4 sm:p-5 rounded-lg">
                 <label class="text-sm font-black text-stone-800" for="nameInput">你的名字</label>
@@ -444,20 +444,13 @@
                 </div>
               </div>
 
-              <details class="mt-4 bg-white border border-stone-200 shadow-sm rounded-lg p-4">
-                <summary class="cursor-pointer text-sm font-black text-stone-800">多人同步設定</summary>
-                <div class="mt-4 grid gap-3">
-                  <label class="grid gap-1 text-sm font-bold text-stone-700">
-                    房間代碼
-                    <input id="roomInput" value="${escapeAttr(state.roomId)}" class="min-h-10 rounded-md border border-stone-300 px-3 font-normal outline-none focus:border-emerald-600" />
-                  </label>
-                  <label class="grid gap-1 text-sm font-bold text-stone-700">
-                    Firebase web app config JSON
-                    <textarea id="firebaseInput" rows="6" class="rounded-md border border-stone-300 p-3 font-mono text-xs font-normal outline-none focus:border-emerald-600" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>${escapeAttr(state.firebaseConfigText)}</textarea>
-                  </label>
-                  <p class="text-xs leading-5 text-stone-500">已預設連到 qa-food Firebase。需要在 Firebase 開啟 Authentication 的匿名登入，Firestore 可先用測試規則。設定會存在這台電腦的 localStorage。</p>
-                </div>
-              </details>
+              <div class="mt-4 bg-white border border-stone-200 shadow-sm rounded-lg p-4">
+                <label class="grid gap-2 text-sm font-black text-stone-800">
+                  點餐房間
+                  <input id="roomInput" value="${escapeAttr(state.roomId)}" class="min-h-10 rounded-md border border-stone-300 px-3 font-normal outline-none focus:border-emerald-600" placeholder="office-teatime" />
+                </label>
+                <p class="mt-2 text-xs leading-5 text-stone-500">同一個房間代碼會看到同一份訂單。</p>
+              </div>
             </div>
           </section>
           <section class="hidden lg:block relative overflow-hidden">
@@ -729,9 +722,6 @@
       nameInput?.addEventListener("input", (event) => {
         state.profile.name = event.target.value;
       });
-      firebaseInput?.addEventListener("input", (event) => {
-        state.firebaseConfigText = event.target.value;
-      });
       roomInput?.addEventListener("input", (event) => {
         state.roomId = event.target.value.trim() || "office-teatime";
       });
@@ -742,7 +732,7 @@
         }
         state.profile.name = state.profile.name.trim();
         localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(state.profile));
-        localStorage.setItem(STORAGE_KEYS.config, state.firebaseConfigText);
+        localStorage.setItem(STORAGE_KEYS.config, JSON.stringify(DEFAULT_FIREBASE_CONFIG, null, 2));
         localStorage.setItem(STORAGE_KEYS.roomId, state.roomId);
         state.entered = true;
         render();
