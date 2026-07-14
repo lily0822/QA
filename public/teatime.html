@@ -64,7 +64,7 @@
 
     const DEFAULT_MENU = {
       restaurantName: "迷客夏 Milksha",
-      restaurantNote: "可改成今天要訂的店家，也可以貼上自己的菜單 JSON。",
+      restaurantNote: "輸入店家名稱後會建立今天的同步點餐菜單。",
       categories: [
         {
           categoryName: "招牌茶飲",
@@ -186,13 +186,12 @@
       splitMode: "byOrder",
       activeCategory: "all",
       search: "",
+      restaurantQuery: "",
       selectedItem: null,
       selectedSugar: "",
       selectedIce: "",
       selectedAdditions: [],
       selectedQty: 1,
-      menuEditorOpen: false,
-      menuJson: JSON.stringify(DEFAULT_MENU, null, 2),
       toast: ""
     };
 
@@ -222,6 +221,181 @@
     function generatedImageUrl(item) {
       const lock = [...item.id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
       return `https://source.unsplash.com/640x480/?${imageQuery(item)}&sig=${lock}`;
+    }
+
+    function normalizeText(value) {
+      return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+    }
+
+    function buildDrink(id, name, price, description, additions = []) {
+      return {
+        id,
+        name,
+        price,
+        description,
+        imageUrl: "",
+        specs: {
+          sugarOptions: ["無糖", "微糖", "半糖", "少糖", "正常糖"],
+          iceOptions: ["去冰", "微冰", "少冰", "正常冰", "熱"],
+          additions: [
+            { name: "珍珠", price: 10 },
+            { name: "椰果", price: 10 },
+            { name: "仙草凍", price: 10 },
+            ...additions
+          ]
+        }
+      };
+    }
+
+    function menuForRestaurant(query) {
+      const rawName = query.trim();
+      const key = normalizeText(rawName);
+      const presets = [
+        {
+          match: ["迷客夏", "milksha"],
+          menu: {
+            restaurantName: rawName || "迷客夏 Milksha",
+            restaurantNote: "依常見飲品建立，可再按圖片按鈕更新餐點圖。",
+            categories: [
+              {
+                categoryName: "鮮奶茶",
+                items: [
+                  buildDrink("milksha-001", "大正紅茶拿鐵", 65, "紅茶香氣與鮮奶比例濃郁。", [{ name: "小芋圓", price: 15 }]),
+                  buildDrink("milksha-002", "珍珠紅茶拿鐵", 75, "經典珍珠鮮奶茶，午後安全牌。", [{ name: "布丁", price: 15 }]),
+                  buildDrink("milksha-003", "伯爵紅茶拿鐵", 70, "佛手柑茶香，適合微糖。", [{ name: "小芋圓", price: 15 }])
+                ]
+              },
+              {
+                categoryName: "茶飲與特調",
+                items: [
+                  buildDrink("milksha-004", "伯爵紅茶", 35, "清爽茶香，適合無糖。"),
+                  buildDrink("milksha-005", "柳橙綠茶", 65, "果香清新，建議微糖少冰。"),
+                  buildDrink("milksha-006", "芋頭鮮奶", 85, "香甜濃郁，想喝甜點感可以選。", [{ name: "珍珠", price: 10 }])
+                ]
+              }
+            ]
+          }
+        },
+        {
+          match: ["五十嵐", "50嵐", "50lan", "50嵐"],
+          menu: {
+            restaurantName: rawName || "五十嵐 50嵐",
+            restaurantNote: "依常見飲品建立，可依門市實際菜單微調。",
+            categories: [
+              {
+                categoryName: "找好茶",
+                items: [
+                  buildDrink("50lan-001", "四季春青茶", 35, "清香順口，無糖也好喝。"),
+                  buildDrink("50lan-002", "阿薩姆紅茶", 30, "經典紅茶，適合加珍珠。"),
+                  buildDrink("50lan-003", "梅果綠茶", 50, "酸甜清爽，適合少冰。")
+                ]
+              },
+              {
+                categoryName: "找奶茶",
+                items: [
+                  buildDrink("50lan-004", "波霸奶茶", 55, "經典大顆波霸奶茶。"),
+                  buildDrink("50lan-005", "珍珠奶茶", 55, "經典小顆珍珠奶茶。"),
+                  buildDrink("50lan-006", "冰淇淋紅茶", 55, "甜甜下午茶感。")
+                ]
+              }
+            ]
+          }
+        },
+        {
+          match: ["龜記", "guiji", "guiji"],
+          menu: {
+            restaurantName: rawName || "龜記",
+            restaurantNote: "依常見飲品建立，可依門市實際菜單微調。",
+            categories: [
+              {
+                categoryName: "經典茶飲",
+                items: [
+                  buildDrink("guiji-001", "極品紅茶", 35, "茶感厚實，適合微糖。"),
+                  buildDrink("guiji-002", "翡翠綠茶", 35, "清爽茶香，適合去冰。"),
+                  buildDrink("guiji-003", "三十三茶王", 40, "茶香明顯，推薦無糖。")
+                ]
+              },
+              {
+                categoryName: "人氣特調",
+                items: [
+                  buildDrink("guiji-004", "紅柚翡翠", 75, "葡萄柚香氣清爽。", [{ name: "蘆薈", price: 15 }]),
+                  buildDrink("guiji-005", "冬瓜鐵觀音", 45, "甜香順口。"),
+                  buildDrink("guiji-006", "鮮乳坊紅茶拿鐵", 65, "鮮奶茶感濃郁。")
+                ]
+              }
+            ]
+          }
+        },
+        {
+          match: ["清心", "清心福全", "chingshin"],
+          menu: {
+            restaurantName: rawName || "清心福全",
+            restaurantNote: "依常見飲品建立，可依門市實際菜單微調。",
+            categories: [
+              {
+                categoryName: "原味茶",
+                items: [
+                  buildDrink("chingshin-001", "烏龍綠茶", 30, "清爽順口，清心經典。"),
+                  buildDrink("chingshin-002", "特級綠茶", 30, "茶香清新。"),
+                  buildDrink("chingshin-003", "錫蘭紅茶", 30, "紅茶基底安全牌。")
+                ]
+              },
+              {
+                categoryName: "奶茶與特調",
+                items: [
+                  buildDrink("chingshin-004", "珍珠奶茶", 50, "經典珍奶。"),
+                  buildDrink("chingshin-005", "優多綠茶", 50, "酸甜清爽。"),
+                  buildDrink("chingshin-006", "蜂蜜烏龍", 45, "蜂蜜香氣搭配烏龍。")
+                ]
+              }
+            ]
+          }
+        }
+      ];
+
+      const found = presets.find(preset => preset.match.some(word => key.includes(normalizeText(word))));
+      if (found) return found.menu;
+
+      return {
+        restaurantName: rawName || "今天的下午茶",
+        restaurantNote: "先用通用飲料菜單建立，大家可以開始點餐。",
+        categories: [
+          {
+            categoryName: "人氣飲品",
+            items: [
+              buildDrink("custom-001", "招牌紅茶", 35, "店家經典茶飲。"),
+              buildDrink("custom-002", "茉香綠茶", 35, "清爽解膩。"),
+              buildDrink("custom-003", "珍珠奶茶", 60, "團購最安全的選擇。"),
+              buildDrink("custom-004", "鮮奶茶", 65, "奶香與茶香平衡。")
+            ]
+          },
+          {
+            categoryName: "水果特調",
+            items: [
+              buildDrink("custom-005", "柳橙綠茶", 65, "果香清爽。", [{ name: "蘆薈", price: 15 }]),
+              buildDrink("custom-006", "葡萄柚綠茶", 70, "酸甜醒腦。", [{ name: "椰果", price: 10 }])
+            ]
+          }
+        ]
+      };
+    }
+
+    async function fetchRestaurantMenu() {
+      const query = state.restaurantQuery.trim();
+      if (!query) {
+        showToast("請先輸入店家名稱");
+        return;
+      }
+      const nextMenu = menuForRestaurant(query);
+      nextMenu.categories.forEach(category => {
+        category.items.forEach(item => {
+          item.imageUrl = generatedImageUrl(item);
+        });
+      });
+      state.activeCategory = "all";
+      state.search = "";
+      await updateRoom({ menu: nextMenu, orders: [] });
+      showToast(`已建立 ${nextMenu.restaurantName} 菜單`);
     }
 
     async function updateRoom(patch) {
@@ -305,7 +479,6 @@
         state.orders = data.orders || [];
         state.deliveryFee = Number(data.deliveryFee || 0);
         state.splitMode = data.splitMode || "byOrder";
-        state.menuJson = JSON.stringify(state.menu, null, 2);
         state.syncStatus = "online";
         state.syncError = "";
         render();
@@ -389,33 +562,6 @@
       }
       await updateRoom({ menu: nextMenu });
       showToast("已抓取餐點圖片");
-    }
-
-    async function saveMenuJson() {
-      try {
-        const parsed = JSON.parse(state.menuJson);
-        if (!parsed.restaurantName || !Array.isArray(parsed.categories)) {
-          throw new Error("bad menu");
-        }
-        parsed.categories.forEach((category, categoryIndex) => {
-          category.categoryName ||= `分類 ${categoryIndex + 1}`;
-          category.items ||= [];
-          category.items.forEach((item, itemIndex) => {
-            item.id ||= `${categoryIndex}-${itemIndex}-${uid()}`;
-            item.price = Number(item.price || 0);
-            item.imageUrl ||= "";
-            item.specs ||= {};
-            item.specs.sugarOptions ||= ["正常糖"];
-            item.specs.iceOptions ||= ["正常冰"];
-            item.specs.additions ||= [];
-          });
-        });
-        state.menuEditorOpen = false;
-        await updateRoom({ menu: parsed });
-        showToast("菜單已更新");
-      } catch (error) {
-        showToast("菜單 JSON 格式不正確");
-      }
     }
 
     function groupedOrders() {
@@ -513,22 +659,11 @@
                   </div>
                   <p class="mt-1 text-xs text-slate-400">房間：${state.roomId} · 使用者：${state.profile.name}</p>
                 </div>
-                <button id="leaveBtn" class="lg:hidden h-10 w-10 rounded-full border border-pink-100 bg-white text-pink-500 inline-flex items-center justify-center shadow-sm" title="回到設定">
-                  <i data-lucide="settings" class="h-4 w-4"></i>
-                </button>
               </div>
               <div class="flex flex-wrap gap-2">
-                <button id="menuEditorBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2 shadow-sm">
-                  <i data-lucide="file-pen-line" class="h-4 w-4"></i>
-                  菜單
-                </button>
                 <button id="copySummaryBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2 shadow-sm">
                   <i data-lucide="copy" class="h-4 w-4"></i>
                   複製明細
-                </button>
-                <button id="leaveBtnWide" class="hidden lg:inline-flex h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 items-center gap-2 shadow-sm">
-                  <i data-lucide="settings" class="h-4 w-4"></i>
-                  設定
                 </button>
               </div>
             </div>
@@ -537,6 +672,17 @@
           <main class="mx-auto max-w-7xl px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
             <section class="min-w-0">
               ${state.syncError ? `<div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">${state.syncError}</div>` : ""}
+              <div class="cute-card mb-5 p-4 sm:p-5">
+                <label class="text-sm font-black text-slate-700" for="restaurantInput">今天訂哪家？</label>
+                <div class="mt-2 flex flex-col sm:flex-row gap-2">
+                  <input id="restaurantInput" value="${escapeAttr(state.restaurantQuery)}" class="cute-input min-h-11 flex-1 px-4" placeholder="例如 迷客夏、五十嵐、龜記、清心" />
+                  <button id="fetchRestaurantBtn" class="cute-btn min-h-11 px-6 font-black inline-flex items-center justify-center gap-2">
+                    <i data-lucide="sparkles" class="h-4 w-4"></i>
+                    抓菜單
+                  </button>
+                </div>
+                <p class="mt-2 text-xs leading-5 text-slate-400">抓到的新菜單會同步給同一個房間的人，並清空舊訂單。</p>
+              </div>
               <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
                   ${categories.map(category => `
@@ -639,7 +785,6 @@
           </main>
 
           ${renderItemModal()}
-          ${renderMenuEditor()}
           ${state.toast ? `<div class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-pink-500 px-4 py-2 text-sm font-black text-white shadow-lg">${state.toast}</div>` : ""}
         </div>
       `;
@@ -712,32 +857,6 @@
       `;
     }
 
-    function renderMenuEditor() {
-      if (!state.menuEditorOpen) return "";
-      return `
-        <div class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 p-3">
-          <div class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-pink-100">
-            <div class="flex items-center justify-between border-b border-pink-100 p-4">
-              <div>
-                <h2 class="font-black text-slate-900">菜單 JSON</h2>
-                <p class="mt-1 text-xs text-slate-400">可貼上今天店家的菜單資料；儲存後會同步給同房間所有人。</p>
-              </div>
-              <button id="closeMenuEditorBtn" class="h-9 w-9 rounded-full text-pink-400 hover:bg-pink-50 inline-flex items-center justify-center" title="關閉">
-                <i data-lucide="x" class="h-4 w-4"></i>
-              </button>
-            </div>
-            <div class="p-4">
-              <textarea id="menuJsonInput" class="cute-input h-[55vh] w-full p-3 font-mono text-xs">${escapeAttr(state.menuJson)}</textarea>
-            </div>
-            <div class="flex justify-end gap-2 border-t border-pink-100 p-4">
-              <button id="resetMenuBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50">還原範例</button>
-              <button id="saveMenuBtn" class="cute-btn h-10 px-5 text-sm font-black">儲存菜單</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
     function render() {
       appNode.innerHTML = state.entered ? renderApp() : renderEntry();
       lucide.createIcons();
@@ -769,14 +888,6 @@
         await connectFirebase();
       });
 
-      document.querySelectorAll("#leaveBtn, #leaveBtnWide").forEach(button => {
-        button.addEventListener("click", () => {
-          state.entered = false;
-          if (state.unsubscribe) state.unsubscribe();
-          state.unsubscribe = null;
-          render();
-        });
-      });
       document.querySelectorAll(".categoryBtn").forEach(button => {
         button.addEventListener("click", () => {
           state.activeCategory = button.dataset.category;
@@ -787,17 +898,19 @@
         state.search = event.target.value;
         render();
       });
+      document.getElementById("restaurantInput")?.addEventListener("input", (event) => {
+        state.restaurantQuery = event.target.value;
+      });
+      document.getElementById("restaurantInput")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") fetchRestaurantMenu();
+      });
+      document.getElementById("fetchRestaurantBtn")?.addEventListener("click", fetchRestaurantMenu);
       document.querySelectorAll(".orderBtn").forEach(button => button.addEventListener("click", () => openModal(button.dataset.orderId)));
       document.querySelectorAll(".imageBtn").forEach(button => button.addEventListener("click", () => updateMenuImage(button.dataset.imageId)));
       document.querySelectorAll(".removeBtn").forEach(button => button.addEventListener("click", () => removeOrder(button.dataset.removeId)));
       document.getElementById("deliveryInput")?.addEventListener("change", (event) => updateRoom({ deliveryFee: Number(event.target.value || 0) }));
       document.getElementById("splitSelect")?.addEventListener("change", (event) => updateRoom({ splitMode: event.target.value }));
       document.getElementById("copySummaryBtn")?.addEventListener("click", copySummary);
-      document.getElementById("menuEditorBtn")?.addEventListener("click", () => {
-        state.menuEditorOpen = true;
-        state.menuJson = JSON.stringify(state.menu, null, 2);
-        render();
-      });
 
       document.getElementById("closeModalBtn")?.addEventListener("click", closeModal);
       document.querySelectorAll(".sugarChoice").forEach(button => button.addEventListener("click", () => {
@@ -824,18 +937,6 @@
       });
       document.getElementById("addOrderBtn")?.addEventListener("click", addOrder);
 
-      document.getElementById("closeMenuEditorBtn")?.addEventListener("click", () => {
-        state.menuEditorOpen = false;
-        render();
-      });
-      document.getElementById("menuJsonInput")?.addEventListener("input", (event) => {
-        state.menuJson = event.target.value;
-      });
-      document.getElementById("resetMenuBtn")?.addEventListener("click", () => {
-        state.menuJson = JSON.stringify(DEFAULT_MENU, null, 2);
-        render();
-      });
-      document.getElementById("saveMenuBtn")?.addEventListener("click", saveMenuJson);
     }
 
     render();
