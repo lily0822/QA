@@ -131,6 +131,15 @@
       roomId: "teatime.roomId.v2"
     };
 
+    const DEFAULT_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBGxFJzUtBp_OoK_7-zoLAj_3vRZgmBbH8",
+      authDomain: "qa-food-465bd.firebaseapp.com",
+      projectId: "qa-food-465bd",
+      storageBucket: "qa-food-465bd.firebasestorage.app",
+      messagingSenderId: "392699108790",
+      appId: "1:392699108790:web:890937be1502fb37d47517"
+    };
+
     const state = {
       entered: false,
       user: null,
@@ -138,7 +147,7 @@
       unsubscribe: null,
       syncStatus: "offline",
       syncError: "",
-      firebaseConfigText: localStorage.getItem(STORAGE_KEYS.config) || "",
+      firebaseConfigText: localStorage.getItem(STORAGE_KEYS.config) || JSON.stringify(DEFAULT_FIREBASE_CONFIG, null, 2),
       roomId: localStorage.getItem(STORAGE_KEYS.roomId) || "office-teatime",
       profile: JSON.parse(localStorage.getItem(STORAGE_KEYS.profile) || '{"name":""}'),
       menu: structuredClone(DEFAULT_MENU),
@@ -446,7 +455,7 @@
                     Firebase web app config JSON
                     <textarea id="firebaseInput" rows="6" class="rounded-md border border-stone-300 p-3 font-mono text-xs font-normal outline-none focus:border-emerald-600" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>${escapeAttr(state.firebaseConfigText)}</textarea>
                   </label>
-                  <p class="text-xs leading-5 text-stone-500">需要在 Firebase 開啟 Authentication 的匿名登入，Firestore 可先用測試規則。設定會存在這台電腦的 localStorage。</p>
+                  <p class="text-xs leading-5 text-stone-500">已預設連到 qa-food Firebase。需要在 Firebase 開啟 Authentication 的匿名登入，Firestore 可先用測試規則。設定會存在這台電腦的 localStorage。</p>
                 </div>
               </details>
             </div>
