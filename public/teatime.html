@@ -294,6 +294,57 @@
       const key = normalizeText(rawName);
       const presets = [
         {
+          match: ["得正", "oolongteaproject", "oolong", "台北南港計劃", "南港計劃"],
+          menu: {
+            restaurantName: rawName || "得正 OOLONG TEA PROJECT",
+            restaurantNote: "得正常見茶飲預設菜單；若 foodpanda 價格不同，請以平台當下為準。",
+            categories: [
+              {
+                categoryName: "原茶系列",
+                items: [
+                  buildDrink("oolong-001", "春烏龍", 35, "清香系烏龍茶，得正招牌茶底。"),
+                  buildDrink("oolong-002", "輕烏龍", 35, "茶感較輕盈，適合無糖或微糖。"),
+                  buildDrink("oolong-003", "焙烏龍", 35, "焙火香氣較明顯，茶韻厚實。"),
+                  buildDrink("oolong-004", "紅烏龍", 40, "紅茶香與烏龍韻味的組合。"),
+                  buildDrink("oolong-005", "白桃烏龍", 55, "白桃果香搭配烏龍茶底。"),
+                  buildDrink("oolong-006", "檸檬春烏龍", 55, "檸檬酸香清爽，適合少冰。")
+                ]
+              },
+              {
+                categoryName: "鮮奶茶系列",
+                items: [
+                  buildDrink("oolong-101", "春烏龍鮮奶", 65, "春烏龍搭配鮮奶，茶香柔順。", [{ name: "粉粿", price: 15 }, { name: "杏仁凍", price: 15 }]),
+                  buildDrink("oolong-102", "輕烏龍鮮奶", 65, "輕盈烏龍與鮮奶的清爽組合。", [{ name: "粉粿", price: 15 }, { name: "杏仁凍", price: 15 }]),
+                  buildDrink("oolong-103", "焙烏龍鮮奶", 65, "焙火茶香與鮮奶更濃郁。", [{ name: "粉粿", price: 15 }, { name: "杏仁凍", price: 15 }]),
+                  buildDrink("oolong-104", "紅烏龍鮮奶", 70, "紅烏龍茶香搭配鮮奶。", [{ name: "粉粿", price: 15 }]),
+                  buildDrink("oolong-105", "珍珠春烏龍鮮奶", 75, "春烏龍鮮奶加珍珠。", [{ name: "粉粿", price: 15 }]),
+                  buildDrink("oolong-106", "粉粿焙烏龍鮮奶", 80, "焙烏龍鮮奶加粉粿，口感更豐富。", [{ name: "珍珠", price: 10 }])
+                ]
+              },
+              {
+                categoryName: "奶蓋系列",
+                items: [
+                  buildDrink("oolong-201", "芝士春烏龍", 65, "鹹甜奶蓋搭配春烏龍。"),
+                  buildDrink("oolong-202", "芝士輕烏龍", 65, "奶蓋口感滑順，茶感清爽。"),
+                  buildDrink("oolong-203", "芝士焙烏龍", 65, "焙火茶香與芝士奶蓋。"),
+                  buildDrink("oolong-204", "芝士紅烏龍", 70, "紅烏龍與奶蓋的濃厚搭配。"),
+                  buildDrink("oolong-205", "芝士白桃烏龍", 80, "白桃香搭配芝士奶蓋。")
+                ]
+              },
+              {
+                categoryName: "水果茶與特調",
+                items: [
+                  buildDrink("oolong-301", "甘蔗春烏龍", 60, "甘蔗清甜搭配春烏龍。"),
+                  buildDrink("oolong-302", "檸檬焙烏龍", 55, "檸檬酸甜與焙茶香。"),
+                  buildDrink("oolong-303", "柚香春烏龍", 65, "柚香清爽，適合微糖少冰。"),
+                  buildDrink("oolong-304", "鳳梨春烏龍", 65, "鳳梨果香與烏龍茶底。"),
+                  buildDrink("oolong-305", "梅子春烏龍", 55, "梅子酸甜，清爽解膩。")
+                ]
+              }
+            ]
+          }
+        },
+        {
           match: ["迷客夏", "milksha"],
           menu: {
             restaurantName: rawName || "迷客夏 Milksha",
