@@ -15,13 +15,43 @@
     body {
       margin: 0;
       font-family: "Inter", "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f7f7f2;
-      color: #1f2933;
+      background: #fff1f2;
+      color: #334155;
     }
     button, input, textarea, select { font: inherit; }
     .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-    .scrollbar-thin::-webkit-scrollbar-track { background: #ece9df; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #b9b3a4; border-radius: 999px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: #ffe4e6; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 999px; }
+    .cute-shell { background: #fff1f2; }
+    .cute-card {
+      border: 1px solid #ffe4e6;
+      border-radius: 1.25rem;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: 0 18px 45px rgba(244, 63, 94, .12);
+    }
+    .cute-btn {
+      border-radius: 999px;
+      background: #ec4899;
+      color: white;
+      box-shadow: 0 10px 22px rgba(236, 72, 153, .22);
+      transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+    .cute-btn:hover {
+      background: #db2777;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(236, 72, 153, .28);
+    }
+    .cute-input {
+      border-radius: .9rem;
+      border: 1px solid #fecdd3;
+      background: #fff;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .cute-input:focus {
+      border-color: #f472b6;
+      box-shadow: 0 0 0 4px rgba(244, 114, 182, .16);
+    }
   </style>
 </head>
 <body>
@@ -423,39 +453,39 @@
 
     function renderEntry() {
       return `
-        <main class="min-h-screen grid lg:grid-cols-[1.05fr_0.95fr]">
+        <main class="cute-shell min-h-screen grid lg:grid-cols-[1.05fr_0.95fr]">
           <section class="px-5 py-8 sm:px-10 lg:px-14 xl:px-20 flex items-center">
             <div class="max-w-2xl w-full">
-              <div class="inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white px-3 py-1 text-xs font-bold text-emerald-800 shadow-sm">
+              <div class="inline-flex items-center gap-2 rounded-full border border-pink-100 bg-white px-4 py-2 text-xs font-black text-pink-500 shadow-sm">
                 <i data-lucide="cup-soda" class="h-4 w-4"></i>
                 下午茶團購點餐
               </div>
-              <h1 class="mt-5 text-4xl sm:text-5xl font-black tracking-normal text-stone-950">今天喝什麼，大家一起同步點。</h1>
-              <p class="mt-4 text-base leading-7 text-stone-600">輸入名字和房間代碼後進入點餐，同一個房間的人會即時同步訂單、菜單與運費。</p>
+              <h1 class="mt-5 text-4xl sm:text-5xl font-black tracking-normal text-slate-900">今天喝什麼，大家一起同步點。</h1>
+              <p class="mt-4 text-base leading-7 text-slate-500">輸入名字和房間代碼後進入點餐，同一個房間的人會即時同步訂單、菜單與運費。</p>
 
-              <div class="mt-8 bg-white border border-stone-200 shadow-sm p-4 sm:p-5 rounded-lg">
-                <label class="text-sm font-black text-stone-800" for="nameInput">你的名字</label>
+              <div class="cute-card mt-8 p-4 sm:p-5">
+                <label class="text-sm font-black text-slate-700" for="nameInput">你的名字</label>
                 <div class="mt-2 flex flex-col sm:flex-row gap-2">
-                  <input id="nameInput" value="${escapeAttr(state.profile.name)}" class="min-h-11 flex-1 rounded-md border border-stone-300 px-3 outline-none focus:border-emerald-600" placeholder="例如 Lily" />
-                  <button id="enterBtn" class="min-h-11 rounded-md bg-emerald-700 px-5 font-black text-white hover:bg-emerald-800 inline-flex items-center justify-center gap-2">
+                  <input id="nameInput" value="${escapeAttr(state.profile.name)}" class="cute-input min-h-11 flex-1 px-4" placeholder="例如 Lily" />
+                  <button id="enterBtn" class="cute-btn min-h-11 px-6 font-black inline-flex items-center justify-center gap-2">
                     <i data-lucide="log-in" class="h-4 w-4"></i>
                     進入點餐
                   </button>
                 </div>
               </div>
 
-              <div class="mt-4 bg-white border border-stone-200 shadow-sm rounded-lg p-4">
-                <label class="grid gap-2 text-sm font-black text-stone-800">
+              <div class="cute-card mt-4 p-4">
+                <label class="grid gap-2 text-sm font-black text-slate-700">
                   點餐房間
-                  <input id="roomInput" value="${escapeAttr(state.roomId)}" class="min-h-10 rounded-md border border-stone-300 px-3 font-normal outline-none focus:border-emerald-600" placeholder="office-teatime" />
+                  <input id="roomInput" value="${escapeAttr(state.roomId)}" class="cute-input min-h-10 px-4 font-normal" placeholder="office-teatime" />
                 </label>
-                <p class="mt-2 text-xs leading-5 text-stone-500">同一個房間代碼會看到同一份訂單。</p>
+                <p class="mt-2 text-xs leading-5 text-slate-400">同一個房間代碼會看到同一份訂單。</p>
               </div>
             </div>
           </section>
           <section class="hidden lg:block relative overflow-hidden">
             <img class="absolute inset-0 h-full w-full object-cover" alt="飲料與甜點" src="https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=1300&q=85" />
-            <div class="absolute inset-0 bg-gradient-to-l from-transparent to-black/10"></div>
+            <div class="absolute inset-0 bg-pink-500/10"></div>
           </section>
         </main>
       `;
@@ -465,38 +495,38 @@
       const categories = ["all", ...state.menu.categories.map(category => category.categoryName)];
       const currentItems = filteredItems();
       const syncBadge = {
-        online: "bg-emerald-100 text-emerald-800",
+        online: "bg-pink-100 text-pink-700",
         connecting: "bg-amber-100 text-amber-800",
-        offline: "bg-stone-200 text-stone-700",
+        offline: "bg-rose-100 text-rose-500",
         error: "bg-red-100 text-red-700"
-      }[state.syncStatus] || "bg-stone-200 text-stone-700";
+      }[state.syncStatus] || "bg-rose-100 text-rose-500";
 
       return `
-        <div class="min-h-screen">
-          <header class="sticky top-0 z-30 border-b border-stone-200 bg-white/90 backdrop-blur">
+        <div class="cute-shell min-h-screen">
+          <header class="sticky top-0 z-30 border-b border-pink-100 bg-white/90 backdrop-blur">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <div class="flex items-center gap-2">
-                    <h1 class="text-xl font-black text-stone-950">${state.menu.restaurantName}</h1>
+                    <h1 class="text-xl font-black text-slate-900">${state.menu.restaurantName}</h1>
                     <span class="rounded-full px-2 py-1 text-[11px] font-black ${syncBadge}">${state.syncStatus === "online" ? "同步中" : state.syncStatus === "connecting" ? "連線中" : state.syncStatus === "error" ? "同步錯誤" : "單機模式"}</span>
                   </div>
-                  <p class="mt-1 text-xs text-stone-500">房間：${state.roomId} · 使用者：${state.profile.name}</p>
+                  <p class="mt-1 text-xs text-slate-400">房間：${state.roomId} · 使用者：${state.profile.name}</p>
                 </div>
-                <button id="leaveBtn" class="lg:hidden h-10 w-10 rounded-md border border-stone-200 bg-white inline-flex items-center justify-center" title="回到設定">
+                <button id="leaveBtn" class="lg:hidden h-10 w-10 rounded-full border border-pink-100 bg-white text-pink-500 inline-flex items-center justify-center shadow-sm" title="回到設定">
                   <i data-lucide="settings" class="h-4 w-4"></i>
                 </button>
               </div>
               <div class="flex flex-wrap gap-2">
-                <button id="menuEditorBtn" class="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50 inline-flex items-center gap-2">
+                <button id="menuEditorBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2 shadow-sm">
                   <i data-lucide="file-pen-line" class="h-4 w-4"></i>
                   菜單
                 </button>
-                <button id="copySummaryBtn" class="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50 inline-flex items-center gap-2">
+                <button id="copySummaryBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2 shadow-sm">
                   <i data-lucide="copy" class="h-4 w-4"></i>
                   複製明細
                 </button>
-                <button id="leaveBtnWide" class="hidden lg:inline-flex h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50 items-center gap-2">
+                <button id="leaveBtnWide" class="hidden lg:inline-flex h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 items-center gap-2 shadow-sm">
                   <i data-lucide="settings" class="h-4 w-4"></i>
                   設定
                 </button>
@@ -506,64 +536,64 @@
 
           <main class="mx-auto max-w-7xl px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
             <section class="min-w-0">
-              ${state.syncError ? `<div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">${state.syncError}</div>` : ""}
+              ${state.syncError ? `<div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">${state.syncError}</div>` : ""}
               <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
                   ${categories.map(category => `
-                    <button data-category="${escapeAttr(category)}" class="categoryBtn shrink-0 h-10 rounded-md px-3 text-sm font-black transition ${state.activeCategory === category ? "bg-stone-950 text-white" : "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50"}">
+                    <button data-category="${escapeAttr(category)}" class="categoryBtn shrink-0 h-10 rounded-full px-4 text-sm font-black transition shadow-sm ${state.activeCategory === category ? "bg-pink-500 text-white" : "bg-white border border-pink-100 text-pink-500 hover:bg-pink-50"}">
                       ${category === "all" ? "全部" : category}
                     </button>
                   `).join("")}
                 </div>
                 <div class="relative md:w-72">
-                  <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"></i>
-                  <input id="searchInput" value="${escapeAttr(state.search)}" class="h-10 w-full rounded-md border border-stone-300 bg-white pl-9 pr-3 outline-none focus:border-emerald-600" placeholder="搜尋餐點" />
+                  <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pink-300"></i>
+                  <input id="searchInput" value="${escapeAttr(state.search)}" class="cute-input h-10 w-full pl-9 pr-3" placeholder="搜尋餐點" />
                 </div>
               </div>
 
               <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 ${currentItems.map(item => `
-                  <article class="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
-                    <div class="relative aspect-[4/3] bg-stone-100">
+                  <article class="overflow-hidden rounded-3xl border border-pink-100 bg-white shadow-[0_18px_45px_rgba(244,63,94,.10)]">
+                    <div class="relative aspect-[4/3] bg-rose-100">
                       <img class="h-full w-full object-cover" alt="${escapeAttr(item.name)}" src="${escapeAttr(item.imageUrl || generatedImageUrl(item))}" loading="lazy" />
-                      <button data-image-id="${escapeAttr(item.id)}" class="imageBtn absolute right-2 top-2 h-9 w-9 rounded-md bg-white/90 shadow inline-flex items-center justify-center hover:bg-white" title="抓取餐點圖片">
+                      <button data-image-id="${escapeAttr(item.id)}" class="imageBtn absolute right-2 top-2 h-9 w-9 rounded-full bg-white/90 text-pink-500 shadow inline-flex items-center justify-center hover:bg-white" title="抓取餐點圖片">
                         <i data-lucide="image-plus" class="h-4 w-4"></i>
                       </button>
                     </div>
                     <div class="p-4">
                       <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                          <h2 class="font-black text-stone-950">${item.name}</h2>
-                          <p class="mt-1 text-xs font-bold text-stone-500">${item.categoryName}</p>
+                          <h2 class="font-black text-slate-900">${item.name}</h2>
+                          <p class="mt-1 text-xs font-bold text-pink-400">${item.categoryName}</p>
                         </div>
-                        <span class="shrink-0 text-sm font-black text-emerald-700">${money(item.price)}</span>
+                        <span class="shrink-0 rounded-full bg-rose-50 px-2.5 py-1 text-sm font-black text-pink-600">${money(item.price)}</span>
                       </div>
-                      <p class="mt-3 min-h-10 text-sm leading-5 text-stone-600">${item.description || "沒有備註"}</p>
-                      <button data-order-id="${escapeAttr(item.id)}" class="orderBtn mt-4 h-10 w-full rounded-md bg-emerald-700 px-3 text-sm font-black text-white hover:bg-emerald-800 inline-flex items-center justify-center gap-2">
+                      <p class="mt-3 min-h-10 text-sm leading-5 text-slate-500">${item.description || "沒有備註"}</p>
+                      <button data-order-id="${escapeAttr(item.id)}" class="orderBtn cute-btn mt-4 h-10 w-full px-3 text-sm font-black inline-flex items-center justify-center gap-2">
                         <i data-lucide="plus" class="h-4 w-4"></i>
                         我要點
                       </button>
                     </div>
                   </article>
-                `).join("") || `<div class="rounded-lg border border-stone-200 bg-white p-8 text-center text-sm font-bold text-stone-500 sm:col-span-2 xl:col-span-3">找不到符合的餐點</div>`}
+                `).join("") || `<div class="rounded-3xl border border-pink-100 bg-white p-8 text-center text-sm font-bold text-slate-400 sm:col-span-2 xl:col-span-3">找不到符合的餐點</div>`}
               </div>
             </section>
 
             <aside class="lg:sticky lg:top-[88px] lg:self-start">
-              <div class="rounded-lg border border-stone-200 bg-white shadow-sm">
-                <div class="border-b border-stone-200 p-4">
+              <div class="rounded-3xl border border-pink-100 bg-white shadow-[0_18px_45px_rgba(244,63,94,.10)]">
+                <div class="border-b border-pink-100 p-4">
                   <div class="flex items-center justify-between">
-                    <h2 class="font-black text-stone-950">目前訂單</h2>
-                    <span class="text-sm font-black text-emerald-700">${money(orderTotal() + Number(state.deliveryFee || 0))}</span>
+                    <h2 class="font-black text-slate-900">目前訂單</h2>
+                    <span class="rounded-full bg-pink-50 px-3 py-1 text-sm font-black text-pink-600">${money(orderTotal() + Number(state.deliveryFee || 0))}</span>
                   </div>
                   <div class="mt-3 grid grid-cols-[1fr_auto] gap-2">
-                    <label class="grid gap-1 text-xs font-black text-stone-500">
+                    <label class="grid gap-1 text-xs font-black text-slate-500">
                       運費
-                      <input id="deliveryInput" type="number" min="0" value="${state.deliveryFee}" class="h-10 rounded-md border border-stone-300 px-3 text-sm font-bold text-stone-800 outline-none focus:border-emerald-600" />
+                      <input id="deliveryInput" type="number" min="0" value="${state.deliveryFee}" class="cute-input h-10 px-3 text-sm font-bold text-slate-800" />
                     </label>
-                    <label class="grid gap-1 text-xs font-black text-stone-500">
+                    <label class="grid gap-1 text-xs font-black text-slate-500">
                       分攤
-                      <select id="splitSelect" class="h-10 rounded-md border border-stone-300 px-2 text-sm font-bold text-stone-800 outline-none focus:border-emerald-600">
+                      <select id="splitSelect" class="cute-input h-10 px-2 text-sm font-bold text-slate-800">
                         <option value="byOrder" ${state.splitMode === "byOrder" ? "selected" : ""}>依金額</option>
                         <option value="equal" ${state.splitMode === "equal" ? "selected" : ""}>平均</option>
                       </select>
@@ -577,32 +607,32 @@
                     return `
                       <section class="mb-5 last:mb-0">
                         <div class="mb-2 flex items-center justify-between">
-                          <h3 class="text-sm font-black text-stone-900">${group.name}</h3>
-                          <span class="text-xs font-black text-stone-500">小計 ${money(group.subtotal + share)}</span>
+                          <h3 class="text-sm font-black text-slate-900">${group.name}</h3>
+                          <span class="text-xs font-black text-pink-500">小計 ${money(group.subtotal + share)}</span>
                         </div>
                         <div class="space-y-2">
                           ${group.orders.map(order => `
-                            <div class="rounded-md border border-stone-200 bg-stone-50 p-3">
+                            <div class="rounded-2xl border border-pink-100 bg-rose-50/60 p-3">
                               <div class="flex gap-3">
-                                <img src="${escapeAttr(order.imageUrl)}" alt="${escapeAttr(order.itemName)}" class="h-14 w-14 rounded-md object-cover bg-stone-200" />
+                                <img src="${escapeAttr(order.imageUrl)}" alt="${escapeAttr(order.itemName)}" class="h-14 w-14 rounded-2xl object-cover bg-rose-100" />
                                 <div class="min-w-0 flex-1">
                                   <div class="flex items-start justify-between gap-2">
-                                    <p class="font-black text-sm text-stone-900">${order.itemName} x${order.quantity}</p>
-                                    <button data-remove-id="${escapeAttr(order.id)}" class="removeBtn h-7 w-7 shrink-0 rounded-md hover:bg-white inline-flex items-center justify-center text-stone-500" title="刪除">
+                                    <p class="font-black text-sm text-slate-900">${order.itemName} x${order.quantity}</p>
+                                    <button data-remove-id="${escapeAttr(order.id)}" class="removeBtn h-7 w-7 shrink-0 rounded-full hover:bg-white inline-flex items-center justify-center text-pink-400" title="刪除">
                                       <i data-lucide="trash-2" class="h-4 w-4"></i>
                                     </button>
                                   </div>
-                                  <p class="mt-1 text-xs leading-5 text-stone-500">${[order.sugar, order.ice, ...order.additions.map(add => add.name)].filter(Boolean).join(" / ") || "無規格"}</p>
-                                  <p class="mt-1 text-xs font-black text-emerald-700">${money(itemSubtotal(order))}</p>
+                                  <p class="mt-1 text-xs leading-5 text-slate-500">${[order.sugar, order.ice, ...order.additions.map(add => add.name)].filter(Boolean).join(" / ") || "無規格"}</p>
+                                  <p class="mt-1 text-xs font-black text-pink-600">${money(itemSubtotal(order))}</p>
                                 </div>
                               </div>
                             </div>
                           `).join("")}
                         </div>
-                        ${state.deliveryFee ? `<p class="mt-2 text-right text-xs font-bold text-stone-500">運費 ${money(share)}</p>` : ""}
+                        ${state.deliveryFee ? `<p class="mt-2 text-right text-xs font-bold text-slate-400">運費 ${money(share)}</p>` : ""}
                       </section>
                     `;
-                  }).join("") || `<div class="rounded-md border border-dashed border-stone-300 p-6 text-center text-sm font-bold text-stone-500">還沒有人點餐</div>`}
+                  }).join("") || `<div class="rounded-2xl border border-dashed border-pink-200 p-6 text-center text-sm font-bold text-slate-400">還沒有人點餐</div>`}
                 </div>
               </div>
             </aside>
@@ -610,7 +640,7 @@
 
           ${renderItemModal()}
           ${renderMenuEditor()}
-          ${state.toast ? `<div class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-stone-950 px-4 py-2 text-sm font-black text-white shadow-lg">${state.toast}</div>` : ""}
+          ${state.toast ? `<div class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-pink-500 px-4 py-2 text-sm font-black text-white shadow-lg">${state.toast}</div>` : ""}
         </div>
       `;
     }
@@ -622,14 +652,14 @@
       const total = (item.price + additionsTotal) * state.selectedQty;
 
       return `
-        <div class="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-3 sm:items-center">
-          <div class="w-full max-w-md rounded-lg bg-white shadow-xl">
-            <div class="flex items-start justify-between border-b border-stone-200 p-4">
+        <div class="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/35 p-3 sm:items-center">
+          <div class="w-full max-w-md rounded-3xl bg-white shadow-2xl border border-pink-100">
+            <div class="flex items-start justify-between border-b border-pink-100 p-4">
               <div>
-                <h2 class="font-black text-stone-950">${item.name}</h2>
-                <p class="mt-1 text-sm font-bold text-emerald-700">${money(item.price)}</p>
+                <h2 class="font-black text-slate-900">${item.name}</h2>
+                <p class="mt-1 text-sm font-bold text-pink-600">${money(item.price)}</p>
               </div>
-              <button id="closeModalBtn" class="h-9 w-9 rounded-md hover:bg-stone-100 inline-flex items-center justify-center" title="關閉">
+              <button id="closeModalBtn" class="h-9 w-9 rounded-full text-pink-400 hover:bg-pink-50 inline-flex items-center justify-center" title="關閉">
                 <i data-lucide="x" class="h-4 w-4"></i>
               </button>
             </div>
@@ -638,30 +668,30 @@
               ${renderChoiceGroup("冰塊", "iceChoice", item.specs?.iceOptions || [], state.selectedIce)}
               ${(item.specs?.additions || []).length ? `
                 <section class="mt-4">
-                  <h3 class="mb-2 text-sm font-black text-stone-700">加料</h3>
+                  <h3 class="mb-2 text-sm font-black text-slate-700">加料</h3>
                   <div class="grid grid-cols-2 gap-2">
                     ${item.specs.additions.map(add => {
                       const selected = state.selectedAdditions.some(entry => entry.name === add.name);
                       return `
-                        <button data-add-name="${escapeAttr(add.name)}" class="additionChoice min-h-11 rounded-md border px-3 text-left text-sm font-black ${selected ? "border-emerald-700 bg-emerald-50 text-emerald-800" : "border-stone-200 bg-white text-stone-700 hover:bg-stone-50"}">
-                          ${add.name} <span class="text-xs text-stone-500">+${money(add.price)}</span>
+                        <button data-add-name="${escapeAttr(add.name)}" class="additionChoice min-h-11 rounded-2xl border px-3 text-left text-sm font-black ${selected ? "border-pink-400 bg-pink-50 text-pink-700" : "border-pink-100 bg-white text-slate-600 hover:bg-rose-50"}">
+                          ${add.name} <span class="text-xs text-slate-400">+${money(add.price)}</span>
                         </button>
                       `;
                     }).join("")}
                   </div>
                 </section>
               ` : ""}
-              <section class="mt-4 flex items-center justify-between border-t border-stone-200 pt-4">
-                <h3 class="text-sm font-black text-stone-700">數量</h3>
+              <section class="mt-4 flex items-center justify-between border-t border-pink-100 pt-4">
+                <h3 class="text-sm font-black text-slate-700">數量</h3>
                 <div class="flex items-center gap-2">
-                  <button id="qtyMinusBtn" class="h-9 w-9 rounded-md border border-stone-200 bg-white font-black hover:bg-stone-50">-</button>
+                  <button id="qtyMinusBtn" class="h-9 w-9 rounded-full border border-pink-100 bg-white font-black text-pink-500 hover:bg-pink-50">-</button>
                   <span class="w-8 text-center font-black">${state.selectedQty}</span>
-                  <button id="qtyPlusBtn" class="h-9 w-9 rounded-md border border-stone-200 bg-white font-black hover:bg-stone-50">+</button>
+                  <button id="qtyPlusBtn" class="h-9 w-9 rounded-full border border-pink-100 bg-white font-black text-pink-500 hover:bg-pink-50">+</button>
                 </div>
               </section>
             </div>
-            <div class="border-t border-stone-200 p-4">
-              <button id="addOrderBtn" class="h-11 w-full rounded-md bg-emerald-700 px-4 font-black text-white hover:bg-emerald-800">加入訂單 · ${money(total)}</button>
+            <div class="border-t border-pink-100 p-4">
+              <button id="addOrderBtn" class="cute-btn h-11 w-full px-4 font-black">加入訂單 · ${money(total)}</button>
             </div>
           </div>
         </div>
@@ -672,10 +702,10 @@
       if (!options.length) return "";
       return `
         <section class="mt-4 first:mt-0">
-          <h3 class="mb-2 text-sm font-black text-stone-700">${title}</h3>
+          <h3 class="mb-2 text-sm font-black text-slate-700">${title}</h3>
           <div class="flex flex-wrap gap-2">
             ${options.map(option => `
-              <button data-choice="${escapeAttr(option)}" class="${className} min-h-10 rounded-md px-3 text-sm font-black ${selectedValue === option ? "bg-stone-950 text-white" : "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50"}">${option}</button>
+              <button data-choice="${escapeAttr(option)}" class="${className} min-h-10 rounded-full px-4 text-sm font-black ${selectedValue === option ? "bg-pink-500 text-white" : "border border-pink-100 bg-white text-slate-600 hover:bg-rose-50"}">${option}</button>
             `).join("")}
           </div>
         </section>
@@ -685,23 +715,23 @@
     function renderMenuEditor() {
       if (!state.menuEditorOpen) return "";
       return `
-        <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-3">
-          <div class="w-full max-w-3xl rounded-lg bg-white shadow-xl">
-            <div class="flex items-center justify-between border-b border-stone-200 p-4">
+        <div class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 p-3">
+          <div class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-pink-100">
+            <div class="flex items-center justify-between border-b border-pink-100 p-4">
               <div>
-                <h2 class="font-black text-stone-950">菜單 JSON</h2>
-                <p class="mt-1 text-xs text-stone-500">可貼上今天店家的菜單資料；儲存後會同步給同房間所有人。</p>
+                <h2 class="font-black text-slate-900">菜單 JSON</h2>
+                <p class="mt-1 text-xs text-slate-400">可貼上今天店家的菜單資料；儲存後會同步給同房間所有人。</p>
               </div>
-              <button id="closeMenuEditorBtn" class="h-9 w-9 rounded-md hover:bg-stone-100 inline-flex items-center justify-center" title="關閉">
+              <button id="closeMenuEditorBtn" class="h-9 w-9 rounded-full text-pink-400 hover:bg-pink-50 inline-flex items-center justify-center" title="關閉">
                 <i data-lucide="x" class="h-4 w-4"></i>
               </button>
             </div>
             <div class="p-4">
-              <textarea id="menuJsonInput" class="h-[55vh] w-full rounded-md border border-stone-300 p-3 font-mono text-xs outline-none focus:border-emerald-600">${escapeAttr(state.menuJson)}</textarea>
+              <textarea id="menuJsonInput" class="cute-input h-[55vh] w-full p-3 font-mono text-xs">${escapeAttr(state.menuJson)}</textarea>
             </div>
-            <div class="flex justify-end gap-2 border-t border-stone-200 p-4">
-              <button id="resetMenuBtn" class="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50">還原範例</button>
-              <button id="saveMenuBtn" class="h-10 rounded-md bg-emerald-700 px-4 text-sm font-black text-white hover:bg-emerald-800">儲存菜單</button>
+            <div class="flex justify-end gap-2 border-t border-pink-100 p-4">
+              <button id="resetMenuBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50">還原範例</button>
+              <button id="saveMenuBtn" class="cute-btn h-10 px-5 text-sm font-black">儲存菜單</button>
             </div>
           </div>
         </div>
