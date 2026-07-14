@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>下午茶團購點餐</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f7f2;
+      color: #1f2933;
+    }
+    button, input, textarea, select { font: inherit; }
+    .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: #ece9df; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #b9b3a4; border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const DEFAULT_MENU = {
+      restaurantName: "迷客夏 Milksha",
+      restaurantNote: "可改成今天要訂的店家，也可以貼上自己的菜單 JSON。",
+      categories: [
+        {
+          categoryName: "招牌茶飲",
+          items: [
+            {
+              id: "tea-001",
+              name: "伯爵紅茶",
+              price: 35,
+              description: "香氣明亮，適合無糖或微糖。",
+              imageUrl: "",
+              specs: {
+                sugarOptions: ["無糖", "微糖", "半糖", "正常糖"],
+                iceOptions: ["去冰", "微冰", "少冰", "正常冰", "熱"],
+                additions: [
+                  { name: "珍珠", price: 10 },
+                  { name: "仙草凍", price: 10 },
+                  { name: "布丁", price: 15 }
+                ]
+              }
+            },
+            {
+              id: "tea-002",
+              name: "大正紅茶拿鐵",
+              price: 65,
+              description: "鮮奶與紅茶比例濃郁，午後很穩。",
+              imageUrl: "",
+              specs: {
+                sugarOptions: ["無糖", "微糖", "半糖", "正常糖"],
+                iceOptions: ["去冰", "微冰", "少冰", "正常冰", "熱"],
+                additions: [
+                  { name: "珍珠", price: 10 },
+                  { name: "小芋圓", price: 15 }
+                ]
+              }
+            },
+            {
+              id: "tea-003",
+              name: "珍珠鮮奶茶",
+              price: 70,
+              description: "經典安全牌，珍珠已包含在品項內。",
+              imageUrl: "",
+              specs: {
+                sugarOptions: ["無糖", "微糖", "半糖", "正常糖"],
+                iceOptions: ["去冰", "微冰", "少冰", "正常冰"],
+                additions: [
+                  { name: "布丁", price: 15 },
+                  { name: "仙草凍", price: 10 }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          categoryName: "水果與特調",
+          items: [
+            {
+              id: "fruit-001",
+              name: "柳橙綠茶",
+              price: 65,
+              description: "清爽果香，建議微糖少冰。",
+              imageUrl: "",
+              specs: {
+                sugarOptions: ["無糖", "微糖", "半糖"],
+                iceOptions: ["去冰", "微冰", "少冰", "正常冰"],
+                additions: [
+                  { name: "椰果", price: 10 },
+                  { name: "寒天晶球", price: 15 }
+                ]
+              }
+            },
+            {
+              id: "fruit-002",
+              name: "芒果綠茶",
+              price: 75,
+              description: "季節感明顯，適合想喝甜一點的人。",
+              imageUrl: "",
+              specs: {
+                sugarOptions: ["微糖", "半糖", "正常糖"],
+                iceOptions: ["微冰", "少冰", "正常冰"],
+                additions: [
+                  { name: "椰果", price: 10 },
+                  { name: "小芋圓", price: 15 }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    };
+
+    const STORAGE_KEYS = {
+      profile: "teatime.profile.v2",
+      config: "teatime.firebaseConfig.v2",
+      roomId: "teatime.roomId.v2"
+    };
+
+    const state = {
+      entered: false,
+      user: null,
+      db: null,
+      unsubscribe: null,
+      syncStatus: "offline",
+      syncError: "",
+      firebaseConfigText: localStorage.getItem(STORAGE_KEYS.config) || "",
+      roomId: localStorage.getItem(STORAGE_KEYS.roomId) || "office-teatime",
+      profile: JSON.parse(localStorage.getItem(STORAGE_KEYS.profile) || '{"name":""}'),
+      menu: structuredClone(DEFAULT_MENU),
+      orders: [],
+      deliveryFee: 0,
+      splitMode: "byOrder",
+      activeCategory: "all",
+      search: "",
+      selectedItem: null,
+      selectedSugar: "",
+      selectedIce: "",
+      selectedAdditions: [],
+      selectedQty: 1,
+      menuEditorOpen: false,
+      menuJson: JSON.stringify(DEFAULT_MENU, null, 2),
+      toast: ""
+    };
+
+    const appNode = document.getElementById("app");
+    const money = (value) => `NT$ ${Number(value || 0).toLocaleString("zh-TW")}`;
+    const escapeAttr = (value = "") => String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const allItems = () => state.menu.categories.flatMap(category => category.items.map(item => ({ ...item, categoryName: category.categoryName })));
+    const itemSubtotal = (order) => (order.price + order.additions.reduce((sum, add) => sum + add.price, 0)) * order.quantity;
+    const orderTotal = () => state.orders.reduce((sum, order) => sum + itemSubtotal(order), 0);
+    const memberNames = () => [...new Set(state.orders.map(order => order.userName))];
+
+    function showToast(message) {
+      state.toast = message;
+      render();
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        state.toast = "";
+        render();
+      }, 2600);
+    }
+
+    function imageQuery(item) {
+      return encodeURIComponent(`${item.name} bubble tea drink`);
+    }
+
+    function generatedImageUrl(item) {
+      const lock = [...item.id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      return `https://source.unsplash.com/640x480/?${imageQuery(item)}&sig=${lock}`;
+    }
+
+    async function updateRoom(patch) {
+      if (!state.db || !state.user || state.syncStatus !== "online") {
+        Object.assign(state, patch);
+        render();
+        return;
+      }
+      const roomRef = doc(state.db, "teatimeRooms", state.roomId);
+      await updateDoc(roomRef, { ...patch, updatedAt: Date.now() });
+    }
+
+    async function connectFirebase() {
+      if (!state.firebaseConfigText.trim()) {
+        state.syncStatus = "offline";
+        state.syncError = "尚未填 Firebase 設定，因此目前是單機模式。";
+        render();
+        return;
+      }
+
+      try {
+        const firebaseConfig = JSON.parse(state.firebaseConfigText);
+        const firebaseApp = initializeApp(firebaseConfig, `teatime-${state.roomId}-${Date.now()}`);
+        const auth = getAuth(firebaseApp);
+        state.db = getFirestore(firebaseApp);
+        state.syncStatus = "connecting";
+        state.syncError = "";
+        render();
+
+        onAuthStateChanged(auth, async (currentUser) => {
+          if (!currentUser) return;
+          state.user = currentUser;
+          await joinRoom();
+        });
+
+        await signInAnonymously(auth);
+      } catch (error) {
+        console.error(error);
+        state.syncStatus = "error";
+        state.syncError = "Firebase 設定無法使用，請確認 JSON、Authentication 匿名登入、Firestore 規則。";
+        render();
+      }
+    }
+
+    async function joinRoom() {
+      const roomRef = doc(state.db, "teatimeRooms", state.roomId);
+      const snapshot = await getDoc(roomRef);
+
+      const memberPatch = {
+        [`members.${state.user.uid}`]: {
+          name: state.profile.name,
+          joinedAt: Date.now()
+        }
+      };
+
+      if (!snapshot.exists()) {
+        await setDoc(roomRef, {
+          roomId: state.roomId,
+          menu: state.menu,
+          orders: [],
+          deliveryFee: state.deliveryFee,
+          splitMode: state.splitMode,
+          members: {
+            [state.user.uid]: {
+              name: state.profile.name,
+              joinedAt: Date.now()
+            }
+          },
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      } else {
+        await updateDoc(roomRef, memberPatch);
+      }
+
+      if (state.unsubscribe) state.unsubscribe();
+      state.unsubscribe = onSnapshot(roomRef, (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+        state.menu = data.menu || state.menu;
+        state.orders = data.orders || [];
+        state.deliveryFee = Number(data.deliveryFee || 0);
+        state.splitMode = data.splitMode || "byOrder";
+        state.menuJson = JSON.stringify(state.menu, null, 2);
+        state.syncStatus = "online";
+        state.syncError = "";
+        render();
+      }, (error) => {
+        console.error(error);
+        state.syncStatus = "error";
+        state.syncError = "同步中斷，請檢查 Firestore 權限。";
+        render();
+      });
+    }
+
+    function filteredItems() {
+      return allItems().filter(item => {
+        const matchCategory = state.activeCategory === "all" || item.categoryName === state.activeCategory;
+        const query = state.search.trim().toLowerCase();
+        const matchQuery = !query || `${item.name} ${item.description} ${item.categoryName}`.toLowerCase().includes(query);
+        return matchCategory && matchQuery;
+      });
+    }
+
+    function openModal(itemId) {
+      const item = allItems().find(entry => entry.id === itemId);
+      if (!item) return;
+      state.selectedItem = item;
+      state.selectedSugar = item.specs?.sugarOptions?.[0] || "";
+      state.selectedIce = item.specs?.iceOptions?.[0] || "";
+      state.selectedAdditions = [];
+      state.selectedQty = 1;
+      render();
+    }
+
+    function closeModal() {
+      state.selectedItem = null;
+      render();
+    }
+
+    async function addOrder() {
+      const item = state.selectedItem;
+      if (!item) return;
+
+      const nextOrder = {
+        id: uid(),
+        userId: state.user?.uid || `local-${state.profile.name}`,
+        userName: state.profile.name,
+        itemId: item.id,
+        itemName: item.name,
+        price: item.price,
+        imageUrl: item.imageUrl || generatedImageUrl(item),
+        sugar: state.selectedSugar,
+        ice: state.selectedIce,
+        additions: state.selectedAdditions,
+        quantity: state.selectedQty,
+        createdAt: Date.now()
+      };
+
+      const nextOrders = [...state.orders, nextOrder];
+      state.selectedItem = null;
+      await updateRoom({ orders: nextOrders });
+      showToast("已加入團購清單");
+    }
+
+    async function removeOrder(orderId) {
+      const order = state.orders.find(entry => entry.id === orderId);
+      const canRemove = order && (order.userName === state.profile.name || !state.db);
+      if (!canRemove) {
+        showToast("只能刪除自己的餐點");
+        return;
+      }
+      await updateRoom({ orders: state.orders.filter(entry => entry.id !== orderId) });
+      showToast("已移除餐點");
+    }
+
+    async function updateMenuImage(itemId) {
+      const nextMenu = structuredClone(state.menu);
+      for (const category of nextMenu.categories) {
+        const item = category.items.find(entry => entry.id === itemId);
+        if (item) {
+          item.imageUrl = generatedImageUrl(item);
+          break;
+        }
+      }
+      await updateRoom({ menu: nextMenu });
+      showToast("已抓取餐點圖片");
+    }
+
+    async function saveMenuJson() {
+      try {
+        const parsed = JSON.parse(state.menuJson);
+        if (!parsed.restaurantName || !Array.isArray(parsed.categories)) {
+          throw new Error("bad menu");
+        }
+        parsed.categories.forEach((category, categoryIndex) => {
+          category.categoryName ||= `分類 ${categoryIndex + 1}`;
+          category.items ||= [];
+          category.items.forEach((item, itemIndex) => {
+            item.id ||= `${categoryIndex}-${itemIndex}-${uid()}`;
+            item.price = Number(item.price || 0);
+            item.imageUrl ||= "";
+            item.specs ||= {};
+            item.specs.sugarOptions ||= ["正常糖"];
+            item.specs.iceOptions ||= ["正常冰"];
+            item.specs.additions ||= [];
+          });
+        });
+        state.menuEditorOpen = false;
+        await updateRoom({ menu: parsed });
+        showToast("菜單已更新");
+      } catch (error) {
+        showToast("菜單 JSON 格式不正確");
+      }
+    }
+
+    function groupedOrders() {
+      return memberNames().map(name => {
+        const orders = state.orders.filter(order => order.userName === name);
+        return {
+          name,
+          orders,
+          subtotal: orders.reduce((sum, order) => sum + itemSubtotal(order), 0)
+        };
+      });
+    }
+
+    function deliveryShare(subtotal) {
+      if (!state.orders.length || !state.deliveryFee) return 0;
+      if (state.splitMode === "equal") {
+        return Math.round(state.deliveryFee / Math.max(memberNames().length, 1));
+      }
+      return Math.round((subtotal / Math.max(orderTotal(), 1)) * state.deliveryFee);
+    }
+
+    function copySummary() {
+      const lines = groupedOrders().map(group => {
+        const share = deliveryShare(group.subtotal);
+        const detail = group.orders.map(order => {
+          const specs = [order.sugar, order.ice, ...order.additions.map(add => add.name)].filter(Boolean).join(" / ");
+          return `  - ${order.itemName} x${order.quantity}${specs ? ` (${specs})` : ""}: ${money(itemSubtotal(order))}`;
+        }).join("\n");
+        return `${group.name}: ${money(group.subtotal + share)}\n${detail}\n  運費: ${money(share)}`;
+      }).join("\n\n");
+
+      const text = `${state.menu.restaurantName} 團購清單\n房間：${state.roomId}\n\n${lines}\n\n總計：${money(orderTotal() + Number(state.deliveryFee || 0))}`;
+      navigator.clipboard?.writeText(text).then(() => showToast("結帳明細已複製"), () => showToast("瀏覽器不允許複製，請手動選取"));
+    }
+
+    function renderEntry() {
+      return `
+        <main class="min-h-screen grid lg:grid-cols-[1.05fr_0.95fr]">
+          <section class="px-5 py-8 sm:px-10 lg:px-14 xl:px-20 flex items-center">
+            <div class="max-w-2xl w-full">
+              <div class="inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white px-3 py-1 text-xs font-bold text-emerald-800 shadow-sm">
+                <i data-lucide="cup-soda" class="h-4 w-4"></i>
+                下午茶團購點餐
+              </div>
+              <h1 class="mt-5 text-4xl sm:text-5xl font-black tracking-normal text-stone-950">今天喝什麼，大家一起同步點。</h1>
+              <p class="mt-4 text-base leading-7 text-stone-600">輸入名字後進入點餐房間。若填入 Firebase 設定，所有人的訂單、菜單與運費會即時同步；未設定也能先單機試用。</p>
+
+              <div class="mt-8 bg-white border border-stone-200 shadow-sm p-4 sm:p-5 rounded-lg">
+                <label class="text-sm font-black text-stone-800" for="nameInput">你的名字</label>
+                <div class="mt-2 flex flex-col sm:flex-row gap-2">
+                  <input id="nameInput" value="${escapeAttr(state.profile.name)}" class="min-h-11 flex-1 rounded-md border border-stone-300 px-3 outline-none focus:border-emerald-600" placeholder="例如 Lily" />
+                  <button id="enterBtn" class="min-h-11 rounded-md bg-emerald-700 px-5 font-black text-white hover:bg-emerald-800 inline-flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="h-4 w-4"></i>
+                    進入點餐
+                  </button>
+                </div>
+              </div>
+
+              <details class="mt-4 bg-white border border-stone-200 shadow-sm rounded-lg p-4">
+                <summary class="cursor-pointer text-sm font-black text-stone-800">多人同步設定</summary>
+                <div class="mt-4 grid gap-3">
+                  <label class="grid gap-1 text-sm font-bold text-stone-700">
+                    房間代碼
+                    <input id="roomInput" value="${escapeAttr(state.roomId)}" class="min-h-10 rounded-md border border-stone-300 px-3 font-normal outline-none focus:border-emerald-600" />
+                  </label>
+                  <label class="grid gap-1 text-sm font-bold text-stone-700">
+                    Firebase web app config JSON
+                    <textarea id="firebaseInput" rows="6" class="rounded-md border border-stone-300 p-3 font-mono text-xs font-normal outline-none focus:border-emerald-600" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>${escapeAttr(state.firebaseConfigText)}</textarea>
+                  </label>
+                  <p class="text-xs leading-5 text-stone-500">需要在 Firebase 開啟 Authentication 的匿名登入，Firestore 可先用測試規則。設定會存在這台電腦的 localStorage。</p>
+                </div>
+              </details>
+            </div>
+          </section>
+          <section class="hidden lg:block relative overflow-hidden">
+            <img class="absolute inset-0 h-full w-full object-cover" alt="飲料與甜點" src="https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=1300&q=85" />
+            <div class="absolute inset-0 bg-gradient-to-l from-transparent to-black/10"></div>
+          </section>
+        </main>
+      `;
+    }
+
+    function renderApp() {
+      const categories = ["all", ...state.menu.categories.map(category => category.categoryName)];
+      const currentItems = filteredItems();
+      const syncBadge = {
+        online: "bg-emerald-100 text-emerald-800",
+        connecting: "bg-amber-100 text-amber-800",
+        offline: "bg-stone-200 text-stone-700",
+        error: "bg-red-100 text-red-700"
+      }[state.syncStatus] || "bg-stone-200 text-stone-700";
+
+      return `
+        <div class="min-h-screen">
+          <header class="sticky top-0 z-30 border-b border-stone-200 bg-white/90 backdrop-blur">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-black text-stone-950">${state.menu.restaurantName}</h1>
+                    <span class="rounded-full px-2 py-1 text-[11px] font-black ${syncBadge}">${state.syncStatus === "online" ? "同步中" : state.syncStatus === "connecting" ? "連線中" : state.syncStatus === "error" ? "同步錯誤" : "單機模式"}</span>
+                  </div>
+                  <p class="mt-1 text-xs text-stone-500">房間：${state.roomId} · 使用者：${state.profile.name}</p>
+                </div>
+                <button id="leaveBtn" class="lg:hidden h-10 w-10 rounded-md border border-stone-200 bg-white inline-flex items-center justify-center" title="回到設定">
+                  <i data-lucide="settings" class="h-4 w-4"></i>
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button id="menuEditorBtn" class="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50 inline-flex items-center gap-2">
+                  <i data-lucide="file-pen-line" class="h-4 w-4"></i>
+                  菜單
+                </button>
+                <button id="copySummaryBtn" class="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50 inline-flex items-center gap-2">
+                  <i data-lucide="copy" class="h-4 w-4"></i>
+                  複製明細
+                </button>
+                <button id="leaveBtnWide" class="hidden lg:inline-flex h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50 items-center gap-2">
+                  <i data-lucide="settings" class="h-4 w-4"></i>
+                  設定
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main class="mx-auto max-w-7xl px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
+            <section class="min-w-0">
+              ${state.syncError ? `<div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">${state.syncError}</div>` : ""}
+              <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                  ${categories.map(category => `
+                    <button data-category="${escapeAttr(category)}" class="categoryBtn shrink-0 h-10 rounded-md px-3 text-sm font-black transition ${state.activeCategory === category ? "bg-stone-950 text-white" : "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50"}">
+                      ${category === "all" ? "全部" : category}
+                    </button>
+                  `).join("")}
+                </div>
+                <div class="relative md:w-72">
+                  <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"></i>
+                  <input id="searchInput" value="${escapeAttr(state.search)}" class="h-10 w-full rounded-md border border-stone-300 bg-white pl-9 pr-3 outline-none focus:border-emerald-600" placeholder="搜尋餐點" />
+                </div>
+              </div>
+
+              <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                ${currentItems.map(item => `
+                  <article class="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+                    <div class="relative aspect-[4/3] bg-stone-100">
+                      <img class="h-full w-full object-cover" alt="${escapeAttr(item.name)}" src="${escapeAttr(item.imageUrl || generatedImageUrl(item))}" loading="lazy" />
+                      <button data-image-id="${escapeAttr(item.id)}" class="imageBtn absolute right-2 top-2 h-9 w-9 rounded-md bg-white/90 shadow inline-flex items-center justify-center hover:bg-white" title="抓取餐點圖片">
+                        <i data-lucide="image-plus" class="h-4 w-4"></i>
+                      </button>
+                    </div>
+                    <div class="p-4">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <h2 class="font-black text-stone-950">${item.name}</h2>
+                          <p class="mt-1 text-xs font-bold text-stone-500">${item.categoryName}</p>
+                        </div>
+                        <span class="shrink-0 text-sm font-black text-emerald-700">${money(item.price)}</span>
+                      </div>
+                      <p class="mt-3 min-h-10 text-sm leading-5 text-stone-600">${item.description || "沒有備註"}</p>
+                      <button data-order-id="${escapeAttr(item.id)}" class="orderBtn mt-4 h-10 w-full rounded-md bg-emerald-700 px-3 text-sm font-black text-white hover:bg-emerald-800 inline-flex items-center justify-center gap-2">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        我要點
+                      </button>
+                    </div>
+                  </article>
+                `).join("") || `<div class="rounded-lg border border-stone-200 bg-white p-8 text-center text-sm font-bold text-stone-500 sm:col-span-2 xl:col-span-3">找不到符合的餐點</div>`}
+              </div>
+            </section>
+
+            <aside class="lg:sticky lg:top-[88px] lg:self-start">
+              <div class="rounded-lg border border-stone-200 bg-white shadow-sm">
+                <div class="border-b border-stone-200 p-4">
+                  <div class="flex items-center justify-between">
+                    <h2 class="font-black text-stone-950">目前訂單</h2>
+                    <span class="text-sm font-black text-emerald-700">${money(orderTotal() + Number(state.deliveryFee || 0))}</span>
+                  </div>
+                  <div class="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                    <label class="grid gap-1 text-xs font-black text-stone-500">
+                      運費
+                      <input id="deliveryInput" type="number" min="0" value="${state.deliveryFee}" class="h-10 rounded-md border border-stone-300 px-3 text-sm font-bold text-stone-800 outline-none focus:border-emerald-600" />
+                    </label>
+                    <label class="grid gap-1 text-xs font-black text-stone-500">
+                      分攤
+                      <select id="splitSelect" class="h-10 rounded-md border border-stone-300 px-2 text-sm font-bold text-stone-800 outline-none focus:border-emerald-600">
+                        <option value="byOrder" ${state.splitMode === "byOrder" ? "selected" : ""}>依金額</option>
+                        <option value="equal" ${state.splitMode === "equal" ? "selected" : ""}>平均</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="max-h-[calc(100vh-250px)] overflow-y-auto p-4 scrollbar-thin">
+                  ${groupedOrders().map(group => {
+                    const share = deliveryShare(group.subtotal);
+                    return `
+                      <section class="mb-5 last:mb-0">
+                        <div class="mb-2 flex items-center justify-between">
+                          <h3 class="text-sm font-black text-stone-900">${group.name}</h3>
+                          <span class="text-xs font-black text-stone-500">小計 ${money(group.subtotal + share)}</span>
+                        </div>
+                        <div class="space-y-2">
+                          ${group.orders.map(order => `
+                            <div class="rounded-md border border-stone-200 bg-stone-50 p-3">
+                              <div class="flex gap-3">
+                                <img src="${escapeAttr(order.imageUrl)}" alt="${escapeAttr(order.itemName)}" class="h-14 w-14 rounded-md object-cover bg-stone-200" />
+                                <div class="min-w-0 flex-1">
+                                  <div class="flex items-start justify-between gap-2">
+                                    <p class="font-black text-sm text-stone-900">${order.itemName} x${order.quantity}</p>
+                                    <button data-remove-id="${escapeAttr(order.id)}" class="removeBtn h-7 w-7 shrink-0 rounded-md hover:bg-white inline-flex items-center justify-center text-stone-500" title="刪除">
+                                      <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                    </button>
+                                  </div>
+                                  <p class="mt-1 text-xs leading-5 text-stone-500">${[order.sugar, order.ice, ...order.additions.map(add => add.name)].filter(Boolean).join(" / ") || "無規格"}</p>
+                                  <p class="mt-1 text-xs font-black text-emerald-700">${money(itemSubtotal(order))}</p>
+                                </div>
+                              </div>
+                            </div>
+                          `).join("")}
+                        </div>
+                        ${state.deliveryFee ? `<p class="mt-2 text-right text-xs font-bold text-stone-500">運費 ${money(share)}</p>` : ""}
+                      </section>
+                    `;
+                  }).join("") || `<div class="rounded-md border border-dashed border-stone-300 p-6 text-center text-sm font-bold text-stone-500">還沒有人點餐</div>`}
+                </div>
+              </div>
+            </aside>
+          </main>
+
+          ${renderItemModal()}
+          ${renderMenuEditor()}
+          ${state.toast ? `<div class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-stone-950 px-4 py-2 text-sm font-black text-white shadow-lg">${state.toast}</div>` : ""}
+        </div>
+      `;
+    }
+
+    function renderItemModal() {
+      const item = state.selectedItem;
+      if (!item) return "";
+      const additionsTotal = state.selectedAdditions.reduce((sum, add) => sum + add.price, 0);
+      const total = (item.price + additionsTotal) * state.selectedQty;
+
+      return `
+        <div class="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-3 sm:items-center">
+          <div class="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <div class="flex items-start justify-between border-b border-stone-200 p-4">
+              <div>
+                <h2 class="font-black text-stone-950">${item.name}</h2>
+                <p class="mt-1 text-sm font-bold text-emerald-700">${money(item.price)}</p>
+              </div>
+              <button id="closeModalBtn" class="h-9 w-9 rounded-md hover:bg-stone-100 inline-flex items-center justify-center" title="關閉">
+                <i data-lucide="x" class="h-4 w-4"></i>
+              </button>
+            </div>
+            <div class="max-h-[65vh] overflow-y-auto p-4 scrollbar-thin">
+              ${renderChoiceGroup("甜度", "sugarChoice", item.specs?.sugarOptions || [], state.selectedSugar)}
+              ${renderChoiceGroup("冰塊", "iceChoice", item.specs?.iceOptions || [], state.selectedIce)}
+              ${(item.specs?.additions || []).length ? `
+                <section class="mt-4">
+                  <h3 class="mb-2 text-sm font-black text-stone-700">加料</h3>
+                  <div class="grid grid-cols-2 gap-2">
+                    ${item.specs.additions.map(add => {
+                      const selected = state.selectedAdditions.some(entry => entry.name === add.name);
+                      return `
+                        <button data-add-name="${escapeAttr(add.name)}" class="additionChoice min-h-11 rounded-md border px-3 text-left text-sm font-black ${selected ? "border-emerald-700 bg-emerald-50 text-emerald-800" : "border-stone-200 bg-white text-stone-700 hover:bg-stone-50"}">
+                          ${add.name} <span class="text-xs text-stone-500">+${money(add.price)}</span>
+                        </button>
+                      `;
+                    }).join("")}
+                  </div>
+                </section>
+              ` : ""}
+              <section class="mt-4 flex items-center justify-between border-t border-stone-200 pt-4">
+                <h3 class="text-sm font-black text-stone-700">數量</h3>
+                <div class="flex items-center gap-2">
+                  <button id="qtyMinusBtn" class="h-9 w-9 rounded-md border border-stone-200 bg-white font-black hover:bg-stone-50">-</button>
+                  <span class="w-8 text-center font-black">${state.selectedQty}</span>
+                  <button id="qtyPlusBtn" class="h-9 w-9 rounded-md border border-stone-200 bg-white font-black hover:bg-stone-50">+</button>
+                </div>
+              </section>
+            </div>
+            <div class="border-t border-stone-200 p-4">
+              <button id="addOrderBtn" class="h-11 w-full rounded-md bg-emerald-700 px-4 font-black text-white hover:bg-emerald-800">加入訂單 · ${money(total)}</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderChoiceGroup(title, className, options, selectedValue) {
+      if (!options.length) return "";
+      return `
+        <section class="mt-4 first:mt-0">
+          <h3 class="mb-2 text-sm font-black text-stone-700">${title}</h3>
+          <div class="flex flex-wrap gap-2">
+            ${options.map(option => `
+              <button data-choice="${escapeAttr(option)}" class="${className} min-h-10 rounded-md px-3 text-sm font-black ${selectedValue === option ? "bg-stone-950 text-white" : "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50"}">${option}</button>
+            `).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderMenuEditor() {
+      if (!state.menuEditorOpen) return "";
+      return `
+        <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-3">
+          <div class="w-full max-w-3xl rounded-lg bg-white shadow-xl">
+            <div class="flex items-center justify-between border-b border-stone-200 p-4">
+              <div>
+                <h2 class="font-black text-stone-950">菜單 JSON</h2>
+                <p class="mt-1 text-xs text-stone-500">可貼上今天店家的菜單資料；儲存後會同步給同房間所有人。</p>
+              </div>
+              <button id="closeMenuEditorBtn" class="h-9 w-9 rounded-md hover:bg-stone-100 inline-flex items-center justify-center" title="關閉">
+                <i data-lucide="x" class="h-4 w-4"></i>
+              </button>
+            </div>
+            <div class="p-4">
+              <textarea id="menuJsonInput" class="h-[55vh] w-full rounded-md border border-stone-300 p-3 font-mono text-xs outline-none focus:border-emerald-600">${escapeAttr(state.menuJson)}</textarea>
+            </div>
+            <div class="flex justify-end gap-2 border-t border-stone-200 p-4">
+              <button id="resetMenuBtn" class="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-black hover:bg-stone-50">還原範例</button>
+              <button id="saveMenuBtn" class="h-10 rounded-md bg-emerald-700 px-4 text-sm font-black text-white hover:bg-emerald-800">儲存菜單</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      appNode.innerHTML = state.entered ? renderApp() : renderEntry();
+      lucide.createIcons();
+      bindEvents();
+    }
+
+    function bindEvents() {
+      const nameInput = document.getElementById("nameInput");
+      const firebaseInput = document.getElementById("firebaseInput");
+      const roomInput = document.getElementById("roomInput");
+
+      nameInput?.addEventListener("input", (event) => {
+        state.profile.name = event.target.value;
+      });
+      firebaseInput?.addEventListener("input", (event) => {
+        state.firebaseConfigText = event.target.value;
+      });
+      roomInput?.addEventListener("input", (event) => {
+        state.roomId = event.target.value.trim() || "office-teatime";
+      });
+      document.getElementById("enterBtn")?.addEventListener("click", async () => {
+        if (!state.profile.name.trim()) {
+          showToast("請先輸入名字");
+          return;
+        }
+        state.profile.name = state.profile.name.trim();
+        localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(state.profile));
+        localStorage.setItem(STORAGE_KEYS.config, state.firebaseConfigText);
+        localStorage.setItem(STORAGE_KEYS.roomId, state.roomId);
+        state.entered = true;
+        render();
+        await connectFirebase();
+      });
+
+      document.querySelectorAll("#leaveBtn, #leaveBtnWide").forEach(button => {
+        button.addEventListener("click", () => {
+          state.entered = false;
+          if (state.unsubscribe) state.unsubscribe();
+          state.unsubscribe = null;
+          render();
+        });
+      });
+      document.querySelectorAll(".categoryBtn").forEach(button => {
+        button.addEventListener("click", () => {
+          state.activeCategory = button.dataset.category;
+          render();
+        });
+      });
+      document.getElementById("searchInput")?.addEventListener("input", (event) => {
+        state.search = event.target.value;
+        render();
+      });
+      document.querySelectorAll(".orderBtn").forEach(button => button.addEventListener("click", () => openModal(button.dataset.orderId)));
+      document.querySelectorAll(".imageBtn").forEach(button => button.addEventListener("click", () => updateMenuImage(button.dataset.imageId)));
+      document.querySelectorAll(".removeBtn").forEach(button => button.addEventListener("click", () => removeOrder(button.dataset.removeId)));
+      document.getElementById("deliveryInput")?.addEventListener("change", (event) => updateRoom({ deliveryFee: Number(event.target.value || 0) }));
+      document.getElementById("splitSelect")?.addEventListener("change", (event) => updateRoom({ splitMode: event.target.value }));
+      document.getElementById("copySummaryBtn")?.addEventListener("click", copySummary);
+      document.getElementById("menuEditorBtn")?.addEventListener("click", () => {
+        state.menuEditorOpen = true;
+        state.menuJson = JSON.stringify(state.menu, null, 2);
+        render();
+      });
+
+      document.getElementById("closeModalBtn")?.addEventListener("click", closeModal);
+      document.querySelectorAll(".sugarChoice").forEach(button => button.addEventListener("click", () => {
+        state.selectedSugar = button.dataset.choice;
+        render();
+      }));
+      document.querySelectorAll(".iceChoice").forEach(button => button.addEventListener("click", () => {
+        state.selectedIce = button.dataset.choice;
+        render();
+      }));
+      document.querySelectorAll(".additionChoice").forEach(button => button.addEventListener("click", () => {
+        const add = state.selectedItem.specs.additions.find(entry => entry.name === button.dataset.addName);
+        const exists = state.selectedAdditions.some(entry => entry.name === add.name);
+        state.selectedAdditions = exists ? state.selectedAdditions.filter(entry => entry.name !== add.name) : [...state.selectedAdditions, add];
+        render();
+      }));
+      document.getElementById("qtyMinusBtn")?.addEventListener("click", () => {
+        state.selectedQty = Math.max(1, state.selectedQty - 1);
+        render();
+      });
+      document.getElementById("qtyPlusBtn")?.addEventListener("click", () => {
+        state.selectedQty += 1;
+        render();
+      });
+      document.getElementById("addOrderBtn")?.addEventListener("click", addOrder);
+
+      document.getElementById("closeMenuEditorBtn")?.addEventListener("click", () => {
+        state.menuEditorOpen = false;
+        render();
+      });
+      document.getElementById("menuJsonInput")?.addEventListener("input", (event) => {
+        state.menuJson = event.target.value;
+      });
+      document.getElementById("resetMenuBtn")?.addEventListener("click", () => {
+        state.menuJson = JSON.stringify(DEFAULT_MENU, null, 2);
+        render();
+      });
+      document.getElementById("saveMenuBtn")?.addEventListener("click", saveMenuJson);
+    }
+
+    render();
+  </script>
+</body>
+</html>
