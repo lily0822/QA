@@ -193,6 +193,7 @@
       activeCategory: "all",
       search: "",
       restaurantQuery: "",
+      foodpandaUrl: "",
       selectedItem: null,
       selectedSugar: "",
       selectedIce: "",
@@ -754,19 +755,89 @@
       navigator.clipboard?.writeText(text).then(() => showToast("開團連結已複製"), () => showToast("瀏覽器不允許複製，請手動選取"));
     }
 
-    function importerScriptUrl() {
-      return `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, "/")}foodpanda-importer.user.js`;
+    async function setImportProgress(progress) {
+      state.importProgress = progress;
+      render();
+      await updateRoom({ importProgress: progress });
     }
 
-    function copyImporterInstructions() {
-      const text = [
-        "1. 安裝 Tampermonkey",
-        `2. 開啟匯入器：${importerScriptUrl()}`,
-        "3. 到 foodpanda 店家頁，右下角會出現「匯入下午茶菜單」",
-        `4. 房間代碼填：${state.roomId}`,
-        "5. 按「開始抓取」後回本網站看進度"
-      ].join("\n");
-      navigator.clipboard?.writeText(text).then(() => showToast("匯入說明已複製"), () => showToast("瀏覽器不允許複製，請手動選取"));
+    async function importFoodpandaUrl() {
+      if (!isLily()) return;
+      const url = state.foodpandaUrl.trim();
+      if (!url) {
+        showToast("請先貼上 foodpanda 店家網址");
+        return;
+      }
+      if (!/^https?:\/\/([^/]+\.)?foodpanda\.com\.tw\//i.test(url)) {
+        showToast("請貼 foodpanda 台灣店家網址");
+        return;
+      }
+      const canSync = await waitForSyncReady();
+      if (!canSync) {
+        showToast("同步還沒連上，請先確認 Firebase");
+        return;
+      }
+
+      let fakePercent = 10;
+      let timer = null;
+      try {
+        await setImportProgress({ status: "running", percent: 5, message: "準備連線到 foodpanda..." });
+        timer = window.setInterval(() => {
+          fakePercent = Math.min(88, fakePercent + 7);
+          state.importProgress = {
+            status: "running",
+            percent: fakePercent,
+            message: fakePercent < 35 ? "正在讀取 foodpanda 頁面..." : fakePercent < 70 ? "正在解析商品、圖片與規格..." : "正在整理固定菜單快照..."
+          };
+          render();
+        }, 700);
+
+        const response = await fetch("/api/import-foodpanda", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "foodpanda 匯入失敗");
+
+        window.clearInterval(timer);
+        timer = null;
+        const nextMenu = result.menu;
+        nextMenu.categories.forEach(category => {
+          category.items.forEach(item => {
+            if (!item.imageUrl) item.imageUrl = generatedImageUrl(item);
+          });
+        });
+        state.menu = nextMenu;
+        state.orders = [];
+        state.orderClosed = false;
+        state.activeCategory = "all";
+        state.search = "";
+        await updateRoom({
+          menu: nextMenu,
+          orders: [],
+          orderClosed: false,
+          importProgress: {
+            status: "done",
+            percent: 100,
+            message: `抓取完成：${result.count || allItems().length} 個商品`,
+            restaurantName: nextMenu.restaurantName,
+            updatedAt: Date.now()
+          }
+        });
+        showToast("foodpanda 菜單抓取完成");
+      } catch (error) {
+        if (timer) window.clearInterval(timer);
+        await updateRoom({
+          importProgress: {
+            status: "error",
+            percent: 100,
+            message: `抓取失敗：${error.message}`,
+            updatedAt: Date.now()
+          }
+        });
+        showToast(error.message || "foodpanda 匯入失敗");
+      }
     }
 
     async function toggleOrderClosed() {
@@ -909,12 +980,12 @@
               ${state.syncError ? `<div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">${state.syncError}</div>` : ""}
               ${isLily() ? `
                 <div class="cute-card mb-5 p-4 sm:p-5">
-                  <label class="text-sm font-black text-slate-700" for="restaurantInput">今天訂哪家？</label>
+                  <label class="text-sm font-black text-slate-700" for="foodpandaUrlInput">貼上 foodpanda 店家網址</label>
                   <div class="mt-2 flex flex-col sm:flex-row gap-2">
-                    <input id="restaurantInput" value="${escapeAttr(state.restaurantQuery)}" class="cute-input min-h-11 flex-1 px-4" placeholder="例如 迷客夏、五十嵐、龜記、清心" />
-                    <button id="fetchRestaurantBtn" class="cute-btn min-h-11 px-6 font-black inline-flex items-center justify-center gap-2">
-                      <i data-lucide="sparkles" class="h-4 w-4"></i>
-                      抓菜單
+                    <input id="foodpandaUrlInput" value="${escapeAttr(state.foodpandaUrl)}" class="cute-input min-h-11 flex-1 px-4" placeholder="https://www.foodpanda.com.tw/restaurant/..." />
+                    <button id="importFoodpandaBtn" class="cute-btn min-h-11 px-6 font-black inline-flex items-center justify-center gap-2">
+                      <i data-lucide="cloud-download" class="h-4 w-4"></i>
+                      一鍵匯入
                     </button>
                   </div>
                   <div class="mt-3 flex flex-wrap gap-2">
@@ -922,20 +993,12 @@
                       <i data-lucide="link" class="h-4 w-4"></i>
                       複製給大家的連結
                     </button>
-                    <a href="${escapeAttr(importerScriptUrl())}" target="_blank" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2">
-                      <i data-lucide="download" class="h-4 w-4"></i>
-                      安裝匯入器
-                    </a>
-                    <button id="copyImporterInstructionsBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2">
-                      <i data-lucide="clipboard-list" class="h-4 w-4"></i>
-                      複製匯入說明
-                    </button>
                     <button id="toggleClosedBtn" class="h-10 rounded-full px-4 text-sm font-black inline-flex items-center gap-2 ${state.orderClosed ? "bg-white border border-pink-100 text-pink-600 hover:bg-pink-50" : "bg-slate-900 text-white hover:bg-slate-800"}">
                       <i data-lucide="${state.orderClosed ? "unlock" : "lock"}" class="h-4 w-4"></i>
                       ${state.orderClosed ? "重新開放點餐" : "截止點餐"}
                     </button>
                   </div>
-                  <p class="mt-2 text-xs leading-5 text-slate-400">抓到的新菜單會同步給同一個房間的人，並清空舊訂單。</p>
+                  <p class="mt-2 text-xs leading-5 text-slate-400">匯入完成後會固定成當下版本，並同步給同一房間的人。</p>
                   ${renderImportProgress()}
                 </div>
               ` : `
@@ -1171,16 +1234,15 @@
         state.search = event.target.value;
         render();
       });
-      document.getElementById("restaurantInput")?.addEventListener("input", (event) => {
-        state.restaurantQuery = event.target.value;
+      document.getElementById("foodpandaUrlInput")?.addEventListener("input", (event) => {
+        state.foodpandaUrl = event.target.value;
       });
-      document.getElementById("restaurantInput")?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") fetchRestaurantMenu();
+      document.getElementById("foodpandaUrlInput")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") importFoodpandaUrl();
       });
-      document.getElementById("fetchRestaurantBtn")?.addEventListener("click", fetchRestaurantMenu);
+      document.getElementById("importFoodpandaBtn")?.addEventListener("click", importFoodpandaUrl);
       document.getElementById("copyShareLinkBtn")?.addEventListener("click", copyShareLink);
       document.getElementById("copyShareLinkInlineBtn")?.addEventListener("click", copyShareLink);
-      document.getElementById("copyImporterInstructionsBtn")?.addEventListener("click", copyImporterInstructions);
       document.getElementById("toggleClosedBtn")?.addEventListener("click", toggleOrderClosed);
       document.getElementById("copyRobotJsonBtn")?.addEventListener("click", copyRobotJson);
       document.querySelectorAll(".orderBtn").forEach(button => button.addEventListener("click", () => openModal(button.dataset.orderId)));
