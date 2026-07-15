@@ -187,6 +187,7 @@
       menu: structuredClone(DEFAULT_MENU),
       orders: [],
       orderClosed: false,
+      importProgress: null,
       deliveryFee: 0,
       splitMode: "byOrder",
       activeCategory: "all",
@@ -588,6 +589,7 @@
           menu: state.menu,
           orders: [],
           orderClosed: false,
+          importProgress: null,
           deliveryFee: state.deliveryFee,
           splitMode: state.splitMode,
           members: {
@@ -614,6 +616,7 @@
         state.menu = data.menu || state.menu;
         state.orders = data.orders || [];
         state.orderClosed = Boolean(data.orderClosed);
+        state.importProgress = data.importProgress || null;
         state.deliveryFee = Number(data.deliveryFee || 0);
         state.splitMode = data.splitMode || "byOrder";
         state.syncStatus = "online";
@@ -751,6 +754,21 @@
       navigator.clipboard?.writeText(text).then(() => showToast("開團連結已複製"), () => showToast("瀏覽器不允許複製，請手動選取"));
     }
 
+    function importerScriptUrl() {
+      return `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, "/")}foodpanda-importer.user.js`;
+    }
+
+    function copyImporterInstructions() {
+      const text = [
+        "1. 安裝 Tampermonkey",
+        `2. 開啟匯入器：${importerScriptUrl()}`,
+        "3. 到 foodpanda 店家頁，右下角會出現「匯入下午茶菜單」",
+        `4. 房間代碼填：${state.roomId}`,
+        "5. 按「開始抓取」後回本網站看進度"
+      ].join("\n");
+      navigator.clipboard?.writeText(text).then(() => showToast("匯入說明已複製"), () => showToast("瀏覽器不允許複製，請手動選取"));
+    }
+
     async function toggleOrderClosed() {
       if (!isLily()) return;
       await updateRoom({ orderClosed: !state.orderClosed });
@@ -782,6 +800,29 @@
       if (!isLily()) return;
       const text = JSON.stringify(robotCommandPayload(), null, 2);
       navigator.clipboard?.writeText(text).then(() => showToast("機器人指令 JSON 已複製"), () => showToast("瀏覽器不允許複製，請手動選取"));
+    }
+
+    function renderImportProgress() {
+      const progress = state.importProgress;
+      if (!progress) return "";
+      const percent = Math.max(0, Math.min(100, Number(progress.percent || 0)));
+      const tone = progress.status === "error"
+        ? "border-red-200 bg-red-50 text-red-700"
+        : progress.status === "done"
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-pink-100 bg-white text-pink-600";
+      return `
+        <div class="mt-4 rounded-2xl border ${tone} p-4">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-sm font-black">${progress.message || "正在抓取 foodpanda 菜單..."}</p>
+            <span class="text-xs font-black">${percent}%</span>
+          </div>
+          <div class="mt-3 h-3 overflow-hidden rounded-full bg-white/70">
+            <div class="h-full rounded-full ${progress.status === "error" ? "bg-red-400" : progress.status === "done" ? "bg-emerald-400" : "bg-pink-400"}" style="width:${percent}%"></div>
+          </div>
+          ${progress.restaurantName ? `<p class="mt-2 text-xs font-bold opacity-80">${progress.restaurantName}</p>` : ""}
+        </div>
+      `;
     }
 
     function renderEntry() {
@@ -881,17 +922,27 @@
                       <i data-lucide="link" class="h-4 w-4"></i>
                       複製給大家的連結
                     </button>
+                    <a href="${escapeAttr(importerScriptUrl())}" target="_blank" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2">
+                      <i data-lucide="download" class="h-4 w-4"></i>
+                      安裝匯入器
+                    </a>
+                    <button id="copyImporterInstructionsBtn" class="h-10 rounded-full border border-pink-100 bg-white px-4 text-sm font-black text-pink-600 hover:bg-pink-50 inline-flex items-center gap-2">
+                      <i data-lucide="clipboard-list" class="h-4 w-4"></i>
+                      複製匯入說明
+                    </button>
                     <button id="toggleClosedBtn" class="h-10 rounded-full px-4 text-sm font-black inline-flex items-center gap-2 ${state.orderClosed ? "bg-white border border-pink-100 text-pink-600 hover:bg-pink-50" : "bg-slate-900 text-white hover:bg-slate-800"}">
                       <i data-lucide="${state.orderClosed ? "unlock" : "lock"}" class="h-4 w-4"></i>
                       ${state.orderClosed ? "重新開放點餐" : "截止點餐"}
                     </button>
                   </div>
                   <p class="mt-2 text-xs leading-5 text-slate-400">抓到的新菜單會同步給同一個房間的人，並清空舊訂單。</p>
+                  ${renderImportProgress()}
                 </div>
               ` : `
                 <div class="cute-card mb-5 p-4 sm:p-5">
                   <p class="text-sm font-black text-slate-700">等待 lily 開團</p>
                   <p class="mt-1 text-xs leading-5 text-slate-400">你在同一個房間，lily 更新菜單或截止點餐時，這裡會自動同步。</p>
+                  ${renderImportProgress()}
                 </div>
               `}
               ${state.orderClosed ? `<div class="mb-4 rounded-2xl border border-pink-100 bg-white px-4 py-3 text-sm font-black text-pink-600">訂單已截止，目前不能新增餐點。</div>` : ""}
@@ -1129,6 +1180,7 @@
       document.getElementById("fetchRestaurantBtn")?.addEventListener("click", fetchRestaurantMenu);
       document.getElementById("copyShareLinkBtn")?.addEventListener("click", copyShareLink);
       document.getElementById("copyShareLinkInlineBtn")?.addEventListener("click", copyShareLink);
+      document.getElementById("copyImporterInstructionsBtn")?.addEventListener("click", copyImporterInstructions);
       document.getElementById("toggleClosedBtn")?.addEventListener("click", toggleOrderClosed);
       document.getElementById("copyRobotJsonBtn")?.addEventListener("click", copyRobotJson);
       document.querySelectorAll(".orderBtn").forEach(button => button.addEventListener("click", () => openModal(button.dataset.orderId)));
